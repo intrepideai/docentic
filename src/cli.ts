@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// docent — your agent guide through any codebase
+// docentic — your agent guide through any codebase
 
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
@@ -10,13 +10,13 @@ import { populateCommand } from './commands/populate.js';
 const program = new Command();
 
 program
-  .name('docent')
+  .name('docentic')
   .description('Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.')
-  .version('0.1.1');
+  .version('0.2.0');
 
 program
   .command('init')
-  .description('Scaffold the docent template into a repo')
+  .description('Scaffold the docentic template into a repo')
   .argument('[path]', 'target repo path (defaults to cwd)')
   .option('-n, --dry-run', 'show what would be created without writing')
   .option('-f, --force', 'overwrite existing files')
@@ -25,7 +25,7 @@ program
   .option('--force-ignored', 'scaffold files even when they would be ignored by .gitignore')
   .option('--no-pr', 'commit on a branch but do not open a PR')
   .option('--no-commit', 'scaffold files without git operations')
-  .option('-b, --branch <name>', 'branch name (default: docent/template-scaffold)')
+  .option('-b, --branch <name>', 'branch name (default: docentic/template-scaffold)')
   .action(async (path: string | undefined, opts) => {
     const code = await initCommand({
       path,
@@ -43,7 +43,7 @@ program
 
 program
   .command('check')
-  .description('Validate a docent-scaffolded repo (no writes). Exit non-zero on errors. Use in CI.')
+  .description('Validate a docentic-scaffolded repo (no writes). Exit non-zero on errors. Use in CI.')
   .argument('[path]', 'target repo path (defaults to cwd)')
   .option('--json', 'output JSON instead of human-readable text (for tooling)')
   .option('--warnings-as-errors', 'fail on warnings too — strict CI mode')
@@ -64,7 +64,7 @@ program
   .option('--max-cost <usd>', 'abort if estimated cost exceeds this USD amount (default: 5)', parseFloat)
   .option('--no-pr', 'commit on a branch but do not open a PR')
   .option('--no-commit', 'apply edits without git operations')
-  .option('-b, --branch <name>', 'branch name (default: docent/populate-content)')
+  .option('-b, --branch <name>', 'branch name (default: docentic/populate-content)')
   .option('-n, --dry-run', 'gather context and estimate cost without calling the API')
   .action(async (path: string | undefined, opts) => {
     const code = await populateCommand({
@@ -81,8 +81,8 @@ program
 
 program
   .command('install')
-  .description('Install the docent skill into Claude Code and/or Cursor.')
-  .option('--claude', 'install the Claude Code skill (~/.claude/skills/docent/)')
+  .description('Install the docentic skill into Claude Code and/or Cursor.')
+  .option('--claude', 'install the Claude Code skill (~/.claude/skills/docentic/)')
   .option('--cursor', 'install the Cursor rule (default: global ~/.cursor/rules/)')
   .option('--project <path>', 'for Cursor: install per-project (<path>/.cursor/rules/) instead of globally')
   .option('-f, --force', 'overwrite if already installed')

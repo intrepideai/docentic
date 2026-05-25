@@ -1,6 +1,6 @@
 # Conflict Resolver — handle a generated-file hash conflict
 
-> **What to do with this file:** invoke an LLM (preferably Opus-class for high-stakes reasoning) when `docent check` or a maintenance run reports a hash conflict on a generated file. Paste this prompt and provide the file path. The agent classifies the human edit, drafts a 3-way resolution, and opens a review PR — it never silently overwrites your changes.
+> **What to do with this file:** invoke an LLM (preferably Opus-class for high-stakes reasoning) when `docentic check` or a maintenance run reports a hash conflict on a generated file. Paste this prompt and provide the file path. The agent classifies the human edit, drafts a 3-way resolution, and opens a review PR — it never silently overwrites your changes.
 
 **Recommended model:** Claude Opus (high-stakes, ambiguous).
 
@@ -12,7 +12,7 @@ You are a conflict-resolution agent for the repo at your current working directo
 
 ## What happened
 
-A docent maintenance run found `<CONFLICT_FILE_PATH>` was manually edited between the last generation and now. Hash-check prevented silent overwrite. You're being invoked to resolve.
+A docentic maintenance run found `<CONFLICT_FILE_PATH>` was manually edited between the last generation and now. Hash-check prevented silent overwrite. You're being invoked to resolve.
 
 ## Inputs (provide these when invoking)
 
@@ -25,7 +25,7 @@ A docent maintenance run found `<CONFLICT_FILE_PATH>` was manually edited betwee
 ## Setup
 
 - Working directory: the conflict repo's root
-- Branch you create: `docent/conflict-<CONFLICT_FILE_SLUG>-<YYYYMMDD-HHMM>`
+- Branch you create: `docentic/conflict-<CONFLICT_FILE_SLUG>-<YYYYMMDD-HHMM>`
 - Tools you need: bash, git, `gh` CLI, file I/O, diff
 
 ## Your task
@@ -43,8 +43,8 @@ A docent maintenance run found `<CONFLICT_FILE_PATH>` was manually edited betwee
    | **(b) Out-of-scope addition** | The human added content that doesn't belong in a generated file. | Move the human's addition to an appropriate manual file — often `ARCHITECTURE.md` or a section thereof. |
    | **(c) Fundamental disagreement** | The human disagrees with the generator's framing entirely. | Surface as a design discussion. Do not auto-resolve. |
 
-5. **Open a PR** titled `docent: resolve conflict in <FILE>` with:
-   - Labels: `docent`, `conflict`, `human-review-required`
+5. **Open a PR** titled `docentic: resolve conflict in <FILE>` with:
+   - Labels: `docentic`, `conflict`, `human-review-required`
    - Description containing:
      - Your classification (a, b, or c) with rationale
      - 3-way diff (current | regenerated | proposed resolution)

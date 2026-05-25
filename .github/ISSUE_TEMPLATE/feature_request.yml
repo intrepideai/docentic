@@ -5,21 +5,21 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before opening, please check that the idea fits docent's scope (see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)). We aim to stay boring, deterministic, fast, and dependency-light.
+        Before opening, please check that the idea fits docentic's scope (see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)). We aim to stay boring, deterministic, fast, and dependency-light.
   - type: textarea
     id: problem
     attributes:
       label: What problem does this solve?
       description: Describe the real-world pain point or use case, not the implementation.
       placeholder: |
-        When I run docent against a Rust repo, the stack detection misses ...
+        When I run docentic against a Rust repo, the stack detection misses ...
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
       label: Proposed solution
-      description: What should docent do?
+      description: What should docentic do?
     validations:
       required: true
   - type: textarea

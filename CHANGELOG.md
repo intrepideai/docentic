@@ -1,10 +1,39 @@
 # Changelog
 
-All notable changes to `docent` are documented here.
+All notable changes to `docentic` are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) starting at v1.0.
 
+> **Note on naming.** Versions `0.1.x` shipped as `docent` / `@intrepideai/docent`. From `0.2.0` onward the binary, npm package, and GitHub repos are `docentic` / `@intrepideai/docentic`. Same tool, same scaffold — just disambiguated from other tools that already use the bare "docent" name. The `0.1.x` entries below describe the older binary name as it shipped (history isn't rewritten); see the `[0.2.0]` section for the rename details.
+
 ## [Unreleased]
+
+## [0.2.0] — 2026-05-25
+
+The rebrand release: `docent` → `docentic`.
+
+Same code, same scaffold, same CLI surface — only the package name, binary
+name, GitHub repo, and a handful of branding strings change. v0.1.1 was
+published to npm under `@intrepideai/docent` for ~1 hour with only internal
+use; that package is now deprecated and points users at the new one.
+
+### Changed
+- **Package name:** `@intrepideai/docent` → `@intrepideai/docentic`.
+- **Binary name:** `docent` → `docentic`. `docent init` becomes `docentic init`, `docent populate` → `docentic populate`, etc.
+- **GitHub repos:** `intrepideai/docent` → `intrepideai/docentic` (and the internal mirror). GitHub auto-redirects old URLs for the foreseeable future, but new references should use the new names.
+- **Default branch names** created by `init` / `populate`: `docent/template-scaffold` → `docentic/template-scaffold`, `docent/populate-content` → `docentic/populate-content`.
+- **Skill install paths:** `~/.claude/skills/docent/` → `~/.claude/skills/docentic/`, `~/.cursor/rules/docent.mdc` → `~/.cursor/rules/docentic.mdc`. Reinstall via `docentic install --claude --cursor` (the old install paths are not auto-cleaned).
+- **GitHub Action:** `uses: intrepideai/docent@main` → `uses: intrepideai/docentic@main`.
+- **JSON Schema URL:** the `$schema` field in scaffolded `.agents/index.json` now points at `https://raw.githubusercontent.com/intrepideai/docentic/main/schemas/agents-index.schema.json`.
+- **Cursor rule filename** in this repo: `skills/cursor/docent.mdc` → `skills/cursor/docentic.mdc`.
+
+### Why the rename
+"Docent" is already a tool name in the AI/ML space (Transluce's interpretability platform). The bare name was creating discoverability and disambiguation friction. `docentic` is the adjective form — "in the manner of a docent" — and preserves the museum-guide metaphor (a docent guides visitors; `docentic` does the same for your repo) without colliding.
+
+### Migration
+- **npm:** `npm uninstall @intrepideai/docent && npm install @intrepideai/docentic` (or `npm install -g @intrepideai/docentic` for global). The old package is deprecated with a redirect message.
+- **GitHub Action:** swap `uses: intrepideai/docent@main` for `uses: intrepideai/docentic@main`.
+- **Existing scaffolded repos:** nothing required. Generated files don't carry the binary name. Re-running `docentic init --force` will refresh the scaffold with `docentic`-branded templates if you want to update copy.
 
 ## [0.1.1] — 2026-05-24
 
@@ -96,6 +125,7 @@ and detect more of what's actually in the repo.
 - CI: typecheck + two smoke tests (dry-run, full scaffold)
 - README with dual copy-paste hero (terminal + LLM prompt), comparison table, Mermaid spine diagram, "agent-friendly" badge for downstream repos
 
-[Unreleased]: https://github.com/intrepideai/docent/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/intrepideai/docent/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/intrepideai/docent/releases/tag/v0.1.0
+[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/intrepideai/docentic/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/intrepideai/docentic/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/intrepideai/docentic/releases/tag/v0.1.0

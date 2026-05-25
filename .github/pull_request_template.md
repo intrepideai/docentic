@@ -4,7 +4,7 @@ Thanks for the PR! Quick checklist:
 - [ ] Branch off `main`, named `feat/...` / `fix/...` / `chore/...` / `docs/...`
 - [ ] One concept per PR — keep it small and focused
 - [ ] `npm run build` passes locally
-- [ ] If you changed `templates/`, you tested with a fresh `docent init` against a throwaway repo
+- [ ] If you changed `templates/`, you tested with a fresh `docentic init` against a throwaway repo
 - [ ] User-facing changes are noted in CHANGELOG.md under [Unreleased]
 -->
 

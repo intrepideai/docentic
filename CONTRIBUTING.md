@@ -1,10 +1,10 @@
-# Contributing to docent
+# Contributing to docentic
 
-Thanks for your interest. `docent` is a tiny tool with a tight scope, so contributions are easy to land if they fit the design — and we'll politely say no if they don't.
+Thanks for your interest. `docentic` is a tiny tool with a tight scope, so contributions are easy to land if they fit the design — and we'll politely say no if they don't.
 
 ## Scope
 
-`docent` does one thing: **scaffold an agent-friendly documentation spine into a repo**. We aim to keep it boring, deterministic, fast, and dependency-light.
+`docentic` does one thing: **scaffold an agent-friendly documentation spine into a repo**. We aim to keep it boring, deterministic, fast, and dependency-light.
 
 In scope:
 - New stack detection rules (more frameworks, more languages)
@@ -15,7 +15,7 @@ In scope:
 - Docs improvements
 
 Out of scope:
-- AI invocation inside the CLI itself beyond the planned `docent populate` command (the agent-orchestration layer lives separately)
+- AI invocation inside the CLI itself beyond the planned `docentic populate` command (the agent-orchestration layer lives separately)
 - Anything that requires a heavyweight runtime dependency
 - Frontend / web UI for the CLI
 
@@ -26,11 +26,11 @@ If you're not sure, open an issue first.
 Requirements: Node 22+, npm.
 
 ```bash
-git clone git@github.com:intrepideai/docent.git    # or your fork
-cd docent
+git clone git@github.com:intrepideai/docentic.git    # or your fork
+cd docentic
 npm install
 npm run build
-npm link                                            # makes `docent` available globally
+npm link                                            # makes `docentic` available globally
 ```
 
 For fast iteration:
@@ -76,17 +76,17 @@ Prefixes (loose convention, not strict): `feat`, `fix`, `chore`, `docs`, `refact
 
 ## Template files
 
-When changing files under `templates/`, remember they get copied into **every** repo `docent init` runs against. Be especially careful with:
+When changing files under `templates/`, remember they get copied into **every** repo `docentic init` runs against. Be especially careful with:
 - Frontmatter (changes affect every downstream `.agents/index.json`)
 - The `MAINTAIN.md` orchestrator spec (changes affect every agent that follows it)
 - Sentinel comments (`AUTO-GENERATED`, `REMOVED`) — changes break existing tombstones
 
-Always test template changes by running `docent init` against a throwaway repo before opening a PR.
+Always test template changes by running `docentic init` against a throwaway repo before opening a PR.
 
 ## Reporting bugs
 
 Open an issue using the **Bug report** template. Include:
-- `docent --version`
+- `docentic --version`
 - `node --version`
 - Your platform (macOS / Linux / Windows + WSL)
 - A minimal repro

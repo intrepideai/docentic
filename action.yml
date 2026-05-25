@@ -1,5 +1,5 @@
-name: 'docent'
-description: 'Validate that a repo follows the docent agent-friendly template — runs `docent check` against your codebase.'
+name: 'docentic'
+description: 'Validate that a repo follows the docentic agent-friendly template — runs `docentic check` against your codebase.'
 author: 'Intrepide'
 
 branding:
@@ -20,18 +20,18 @@ inputs:
     required: false
     default: 'false'
   node-version:
-    description: 'Node.js version to install (>= 22)'
+    description: 'Node.js version to install (>= 20)'
     required: false
-    default: '22'
+    default: '20'
   version:
-    description: 'docent version to run (npm spec — defaults to the GitHub main branch)'
+    description: 'docentic version to run (npm spec — defaults to latest published)'
     required: false
-    default: 'github:intrepideai/docent'
+    default: '@intrepideai/docentic'
 
 outputs:
   ok:
     description: '"true" if the check passed cleanly, "false" otherwise'
-    value: ${{ steps.docent-check.outputs.ok }}
+    value: ${{ steps.docentic-check.outputs.ok }}
 
 runs:
   using: 'composite'
@@ -41,8 +41,8 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Run docent check
-      id: docent-check
+    - name: Run docentic check
+      id: docentic-check
       shell: bash
       run: |
         ARGS=()

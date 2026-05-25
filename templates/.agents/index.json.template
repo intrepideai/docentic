@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/intrepideai/docent/main/schemas/agents-index.schema.json",
+  "$schema": "https://raw.githubusercontent.com/intrepideai/docentic/main/schemas/agents-index.schema.json",
   "version": 1,
   "repo": "{{REPO_NAME}}",
   "product_name": "{{REPO_NAME}}",

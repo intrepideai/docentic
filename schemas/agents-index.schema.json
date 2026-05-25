@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/intrepideai/docent/main/schemas/agents-index.schema.json",
+  "$id": "https://raw.githubusercontent.com/intrepideai/docentic/main/schemas/agents-index.schema.json",
   "title": ".agents/index.json",
-  "description": "Machine-readable inventory of an agent-friendly repo scaffolded by docent. Lives at .agents/index.json. Any tool that needs to know what docs are present, their tier, their merge policy, and what state the research pipeline is in can read this file.",
+  "description": "Machine-readable inventory of an agent-friendly repo scaffolded by docentic. Lives at .agents/index.json. Any tool that needs to know what docs are present, their tier, their merge policy, and what state the research pipeline is in can read this file.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "repo", "docs"],
@@ -20,7 +20,7 @@
     "repo": {
       "type": "string",
       "description": "Repo identifier — typically `<owner>/<name>`.",
-      "examples": ["intrepideai/docent"]
+      "examples": ["intrepideai/docentic"]
     },
     "product_name": {
       "type": "string",
@@ -34,7 +34,7 @@
     },
     "template_version": {
       "type": "string",
-      "description": "Version of the docent template that scaffolded this repo (semver).",
+      "description": "Version of the docentic template that scaffolded this repo (semver).",
       "pattern": "^\\d+\\.\\d+\\.\\d+(-[\\w.-]+)?$"
     },
     "updated": {

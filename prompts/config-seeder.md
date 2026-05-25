@@ -1,6 +1,6 @@
 # Config Seeder — propose research topics
 
-> **What to do with this file:** copy everything below the `---` into your LLM of choice. It will read your codebase and propose a tailored `research/config.yml` for the docent research pipeline.
+> **What to do with this file:** copy everything below the `---` into your LLM of choice. It will read your codebase and propose a tailored `research/config.yml` for the docentic research pipeline.
 
 **Recommended model:** Claude Sonnet (this is read + judgment; doesn't need the deepest reasoning).
 
@@ -8,7 +8,7 @@
 
 ---
 
-The repo at your current working directory has the `docent` template installed. The research pipeline at `research/` is scaffolded but `research/config.yml` is a generic skeleton — it has no topics, keywords, or sources tailored to this codebase.
+The repo at your current working directory has the `docentic` template installed. The research pipeline at `research/` is scaffolded but `research/config.yml` is a generic skeleton — it has no topics, keywords, or sources tailored to this codebase.
 
 Your job: read the docs and propose a tailored config. Don't overwrite the existing `config.yml` — write to `research/config.proposed.yml` for human review.
 
@@ -62,7 +62,7 @@ Free-text search strings the scouts will use. Mix specific tech and concept term
 ## Output
 
 1. Write `research/config.proposed.yml` (do NOT overwrite `config.yml`)
-2. Open a PR titled "chore: propose docent research config" with:
+2. Open a PR titled "chore: propose docentic research config" with:
    - The new file
    - PR description summarizing: which topics you chose, why, which sources you picked
 

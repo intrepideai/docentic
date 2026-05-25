@@ -26,7 +26,7 @@ annotate_dir() {
     src)              echo "Source code";;
     lib)              echo "Library code";;
     scripts)          echo "Repo-wide scripts";;
-    scripts/llm-docs) echo "docent template tooling";;
+    scripts/llm-docs) echo "docentic template tooling";;
     docs)             echo "Repo-level LLM-friendly documentation";;
     examples)         echo "Sample code / example apps";;
     tests|test|__tests__)  echo "Test suites";;
@@ -35,11 +35,11 @@ annotate_dir() {
     prisma)           echo "Prisma schema + migrations";;
     migrations|db/migrate)  echo "Database migrations";;
     terraform|pulumi|cdk)   echo "Infrastructure-as-code";;
-    .agents)          echo "Machine-readable doc inventory (docent)";;
+    .agents)          echo "Machine-readable doc inventory (docentic)";;
     .github)          echo "GitHub config, workflows, templates";;
     .claude)          echo "Claude Code config";;
     .cursor)          echo "Cursor IDE rules";;
-    research)         echo "Research library (docent scout pipeline)";;
+    research)         echo "Research library (docentic scout pipeline)";;
     *) echo "";;
   esac
 }

@@ -1,4 +1,4 @@
-// `docent install` — install the docent skill into Claude Code and/or Cursor.
+// `docentic install` — install the docentic skill into Claude Code and/or Cursor.
 //
 // Detects which agents the user has installed (by checking for ~/.claude/ and
 // ~/.cursor/) and copies the appropriate skill files into place.
@@ -45,7 +45,7 @@ function detectCursor(): boolean {
 
 function installClaude(opts: InstallOptions, result: InstallResult): void {
   const src = join(SKILLS_DIR, 'claude', 'SKILL.md');
-  const dst = join(homedir(), '.claude', 'skills', 'docent', 'SKILL.md');
+  const dst = join(homedir(), '.claude', 'skills', 'docentic', 'SKILL.md');
 
   if (!existsSync(src)) {
     result.failed.push({ target: 'claude', error: `skill source missing: ${src}` });
@@ -64,10 +64,10 @@ function installClaude(opts: InstallOptions, result: InstallResult): void {
 }
 
 function installCursor(opts: InstallOptions, result: InstallResult): void {
-  const src = join(SKILLS_DIR, 'cursor', 'docent.mdc');
+  const src = join(SKILLS_DIR, 'cursor', 'docentic.mdc');
   const dst = opts.project
-    ? join(resolve(opts.project), '.cursor', 'rules', 'docent.mdc')
-    : join(homedir(), '.cursor', 'rules', 'docent.mdc');
+    ? join(resolve(opts.project), '.cursor', 'rules', 'docentic.mdc')
+    : join(homedir(), '.cursor', 'rules', 'docentic.mdc');
 
   if (!existsSync(src)) {
     result.failed.push({ target: 'cursor', error: `skill source missing: ${src}` });
@@ -96,7 +96,7 @@ export async function installCommand(opts: InstallOptions): Promise<number> {
     return 1;
   }
 
-  log.step(opts.dryRun ? 'docent install — DRY RUN' : 'docent install');
+  log.step(opts.dryRun ? 'docentic install — DRY RUN' : 'docentic install');
   log.blank();
 
   const result: InstallResult = { installed: [], skipped: [], failed: [] };
@@ -119,12 +119,12 @@ export async function installCommand(opts: InstallOptions): Promise<number> {
     log.blank();
     log.step('What to try next:');
     if (result.installed.some((r) => r.target === 'claude')) {
-      log.dim('  In Claude Code:  "docent this repo" or "make this repo agent-friendly"');
+      log.dim('  In Claude Code:  "docentic this repo" or "make this repo agent-friendly"');
     }
     if (result.installed.some((r) => r.target === 'cursor')) {
-      log.dim('  In Cursor:       same — say "docent this repo" in the chat');
+      log.dim('  In Cursor:       same — say "docentic this repo" in the chat');
     }
-    log.dim('  Or directly:    docent init');
+    log.dim('  Or directly:    docentic init');
   }
 
   return result.failed.length === 0 ? 0 : 1;

@@ -1,4 +1,4 @@
-<svg width="900" height="540" viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anatomy of a docent-scaffolded repo: AGENTS.md at top points to ARCHITECTURE.md as the anchor, then the spine splits into Generated, Manual, and AI/Auto-detected columns, with .agents/, scripts/llm-docs/, and research/ sidebars at the bottom.">
+<svg width="900" height="540" viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anatomy of a docentic-scaffolded repo: AGENTS.md at top points to ARCHITECTURE.md as the anchor, then the spine splits into Generated, Manual, and AI/Auto-detected columns, with .agents/, scripts/llm-docs/, and research/ sidebars at the bottom.">
   <defs>
     <style>
       .title { font: 700 18px ui-sans-serif, system-ui, -apple-system, sans-serif; fill: #1e1b4b; }
@@ -26,7 +26,7 @@
   <rect width="900" height="540" fill="url(#bgGradient)" rx="14"/>
 
   <!-- Title -->
-  <text x="450" y="34" text-anchor="middle" class="title">Anatomy of a docent-scaffolded repo</text>
+  <text x="450" y="34" text-anchor="middle" class="title">Anatomy of a docentic-scaffolded repo</text>
   <text x="450" y="54" text-anchor="middle" class="subtitle">AGENTS.md at the top. ARCHITECTURE.md as the anchor. Every other file flows from there.</text>
 
   <!-- AGENTS.md entry tile -->

@@ -84,4 +84,4 @@ Default merge policies in [`.agents/index.json`](../../../.agents/index.json):
 - [`scripts/llm-docs/MAINTAIN.md`](../../../scripts/llm-docs/MAINTAIN.md) — full vendor-neutral spec
 - [`AGENTS.md`](../../../AGENTS.md) — repo root index
 - [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) — system anchor
-- <https://github.com/intrepideai/docent> — the design spec and full project README
+- <https://github.com/intrepideai/docentic> — the design spec and full project README

@@ -16,7 +16,7 @@ hash: pending
 
 ## Initial state — {{DATE}}
 
-LLM-friendly docs template scaffolded by `@intrepideai/docent`. The HISTORY Writer agent (Prompt 6) will append new entries on its daily run.
+LLM-friendly docs template scaffolded by `@intrepideai/docentic`. The HISTORY Writer agent (Prompt 6) will append new entries on its daily run.
 
 ---
 

@@ -1,19 +1,19 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/logo-dark.svg">
-    <img alt="docent — hub-and-spoke logo" src="./docs/assets/logo-light.svg" width="140">
+    <img alt="docentic — hub-and-spoke logo" src="./docs/assets/logo-light.svg" width="140">
   </picture>
 </p>
 
-<h1 align="center">docent</h1>
+<h1 align="center">docentic</h1>
 
 <p align="center">
   <em>Your agent guide through any codebase.</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/intrepideai/docent/releases"><img alt="version" src="https://img.shields.io/badge/version-0.1.0-7c3aed?style=flat-square"></a>
-  <a href="https://github.com/intrepideai/docent/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/intrepideai/docent/ci.yml?branch=main&style=flat-square&label=ci"></a>
+  <a href="https://www.npmjs.com/package/@intrepideai/docentic"><img alt="npm" src="https://img.shields.io/npm/v/@intrepideai/docentic?style=flat-square&color=7c3aed&label=npm"></a>
+  <a href="https://github.com/intrepideai/docentic/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/intrepideai/docentic/ci.yml?branch=main&style=flat-square&label=ci"></a>
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square"></a>
   <img alt="agent-friendly: yes" src="https://img.shields.io/badge/agent--friendly-yes-7c3aed?style=flat-square">
 </p>
@@ -30,12 +30,12 @@
 
 **Make your repo agent-friendly in one command.**
 
-`docent` scaffolds a standardized documentation spine into any codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
+`docentic` scaffolds a standardized documentation spine into any codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
 
-> A docent guides visitors through a museum. `docent` does the same for your repo — for both humans and AI agents.
+> A docent guides visitors through a museum. `docentic` does the same for your repo — for both humans and AI agents. (The name is the adjective form: tools that are *docentic* are tools that act like a docent.)
 
 <p align="center">
-  <img alt="Anatomy of a docent-scaffolded repo: AGENTS.md at top, docs/ARCHITECTURE.md as the anchor, with the spine split into Generated, Manual, and AI/Auto-detected columns, plus .agents/, scripts/llm-docs/, and research/ sidebars" src="./docs/assets/anatomy.svg" width="900">
+  <img alt="Anatomy of a docentic-scaffolded repo: AGENTS.md at top, docs/ARCHITECTURE.md as the anchor, with the spine split into Generated, Manual, and AI/Auto-detected columns, plus .agents/, scripts/llm-docs/, and research/ sidebars" src="./docs/assets/anatomy.svg" width="900">
 </p>
 
 ---
@@ -45,20 +45,20 @@
 ### 1. In your terminal
 
 ```bash
-npx github:intrepideai/docent init
+npx @intrepideai/docentic init
 ```
 
-That commits a `docent/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Stack-aware auto-detection.
+That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Stack-aware auto-detection.
 
 ### 2. In any agent with repo filesystem access (Claude Code · Cursor agent · Codex CLI · Gemini CLI · …)
 
 ```text
-Make the repo at <YOUR-REPO-PATH> agent-friendly using docent (https://github.com/intrepideai/docent).
+Make the repo at <YOUR-REPO-PATH> agent-friendly using docentic (https://github.com/intrepideai/docentic).
 
 1. cd to that path.
-2. Run: npx github:intrepideai/docent init --no-pr
-3. Read https://github.com/intrepideai/docent/blob/main/prompts/bootstrap.md and follow it — fill all the TODO markers in AGENTS.md and docs/*.md by reading the codebase.
-4. Commit on a branch and open a PR titled "chore: populate docent scaffold with real content".
+2. Run: npx @intrepideai/docentic init --no-pr
+3. Read https://github.com/intrepideai/docentic/blob/main/prompts/bootstrap.md and follow it — fill all the TODO markers in AGENTS.md and docs/*.md by reading the codebase.
+4. Commit on a branch and open a PR titled "chore: populate docentic scaffold with real content".
 
 Begin.
 ```
@@ -70,13 +70,13 @@ Replace `<YOUR-REPO-PATH>` with your repo's path. Your agent runs scaffold + con
 ### 3. In your editor (Claude Code or Cursor)
 
 ```bash
-# One-time install of the docent skill
-npx github:intrepideai/docent install
+# One-time install of the docentic skill
+npx @intrepideai/docentic install
 ```
 
 Then in any Claude Code or Cursor chat:
 
-> "docent this repo"
+> "docentic this repo"
 
 Your agent picks it up automatically — scaffolds, then offers to fill the content TODOs. Two messages, end-to-end.
 
@@ -84,7 +84,7 @@ Your agent picks it up automatically — scaffolds, then offers to fill the cont
 
 ```bash
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
-npx github:intrepideai/docent init && npx github:intrepideai/docent populate
+npx @intrepideai/docentic init && npx @intrepideai/docentic populate
 ```
 
 The scaffold + content fill done by the CLI itself. No chat, no prompts to paste. Costs ~$0.30 per repo.
@@ -95,7 +95,7 @@ The scaffold + content fill done by the CLI itself. No chat, no prompts to paste
 
 Stock repos are unreadable to AI agents. README is for humans, intent lives in heads, and architectural decisions evaporate. Agents end up grepping the wrong file three times before giving up.
 
-### Without docent
+### Without docentic
 
 ```text
 You: "What's the data model?"
@@ -104,7 +104,7 @@ Agent: *greps for "model"*
         *hallucinates a schema*
 ```
 
-### With docent
+### With docentic
 
 ```text
 You: "What's the data model?"
@@ -113,7 +113,7 @@ Agent: *reads AGENTS.md → docs/DATA.md*
         *links back to ARCHITECTURE.md for context*
 ```
 
-| Concern | Stock repo | With docent |
+| Concern | Stock repo | With docentic |
 |---|---|---|
 | Entry point | README.md (for humans) | `AGENTS.md` (for agents) |
 | Architecture intent | In someone's head | `docs/ARCHITECTURE.md` (the anchor) |
@@ -136,15 +136,15 @@ The two-line setup at the top handles 90% of repos. Here's the longer version wi
 
 ```bash
 # Zero-install one-shot (recommended)
-npx github:intrepideai/docent init
+npx @intrepideai/docentic init
 
 # Or install globally
-npm install -g github:intrepideai/docent
-docent init
+npm install -g @intrepideai/docentic
+docentic init
 
 # Or clone for development
-git clone git@github.com:intrepideai/docent.git
-cd docent && npm install && npm run build && npm link
+git clone git@github.com:intrepideai/docentic.git
+cd docentic && npm install && npm run build && npm link
 ```
 
 #### Useful flags
@@ -159,14 +159,14 @@ cd docent && npm install && npm run build && npm link
 | `--no-pr` | Commit on a branch, but don't open a PR. |
 | `--no-commit` | Write files in place, skip git operations entirely. |
 
-`docent init` is **safe to re-run**. Existing files are skipped unless you pass `--force`, so you can run it again to pick up template updates without clobbering local edits.
+`docentic init` is **safe to re-run**. Existing files are skipped unless you pass `--force`, so you can run it again to pick up template updates without clobbering local edits.
 
 ### 2. Fill the content
 
 The scaffold leaves TODO markers in `AGENTS.md` and `docs/*.md` — real content depends on your codebase. Two ways:
 
 - **Manual mode** (filesystem-capable agent, no API key needed): paste [`prompts/bootstrap.md`](./prompts/bootstrap.md) — or the shorter prompt from the [hero section](#three-ways-to-start--pick-one-and-copy) — into Claude Code, Cursor's agent mode, Codex CLI, Gemini CLI, OpenHands, or any other agent that can read and write your repo's files directly. (Stock ChatGPT and Claude.ai web won't work here — they can't see your filesystem.)
-- **Automated mode**: copy [`.env.example`](./.env.example) → `.env`, add `ANTHROPIC_API_KEY`, then `docent populate`.
+- **Automated mode**: copy [`.env.example`](./.env.example) → `.env`, add `ANTHROPIC_API_KEY`, then `docentic populate`.
 
 ### 3. Schedule maintenance
 
@@ -257,27 +257,27 @@ Stack detection automatically adds `UI.md` for frontends, `INFRA.md` for IaC rep
 ## Commands
 
 ```text
-docent init [path]              Scaffold the template into a repo
+docentic init [path]              Scaffold the template into a repo
   --dry-run                     Show what would be created without writing
   --force                       Overwrite existing files
   --minimal                     Only infrastructure (skip docs/* skeletons)
   --no-pr                       Commit on a branch but don't open a PR
   --no-commit                   Just write files; no git operations
-  --branch <name>               Custom branch name (default: docent/template-scaffold)
+  --branch <name>               Custom branch name (default: docentic/template-scaffold)
 
-docent populate [path]          Fill scaffolded TODOs using an LLM
+docentic populate [path]          Fill scaffolded TODOs using an LLM
   --model <name>                Claude model (default: claude-sonnet-4-7)
   --max-cost <usd>              Abort if estimated cost exceeds this (default: 5)
   --no-pr                       Commit on a branch but don't open a PR
   --no-commit                   Apply edits without git operations
-  --branch <name>               Custom branch name (default: docent/populate-content)
+  --branch <name>               Custom branch name (default: docentic/populate-content)
   --dry-run                     Gather context + estimate cost without calling the API
 
-docent check [path]             Validate a docent-scaffolded repo (no writes)
+docentic check [path]             Validate a docentic-scaffolded repo (no writes)
   --json                        Output JSON instead of text (for tooling)
   --warnings-as-errors          Fail on warnings — strict CI mode
 
-docent install                  Install the docent skill into Claude Code and/or Cursor
+docentic install                  Install the docentic skill into Claude Code and/or Cursor
   --claude                      Install only the Claude Code skill
   --cursor                      Install only the Cursor rule
   --project <path>              For Cursor: install per-project instead of globally
@@ -285,51 +285,52 @@ docent install                  Install the docent skill into Claude Code and/or
   --dry-run                     Show what would be installed without writing
 ```
 
-Exit codes for `docent check`: `0` healthy · `1` errors found · `2` not a docent repo.
+Exit codes for `docentic check`: `0` healthy · `1` errors found · `2` not a docentic repo.
 
 Coming soon:
-- `docent status` — show template state for a repo
-- `docent update` — re-sync the template after a new docent release
+- `docentic status` — show template state for a repo
+- `docentic update` — re-sync the template after a new docentic release
 
 ---
 
 ## Editor install (Claude Code · Cursor)
 
-For deeper detail on the editor skill — manual install paths, what triggers it, what it does — see the [installation guide](#three-ways-to-start--pick-one-and-copy) at the top, plus the source files: [`skills/claude/SKILL.md`](./skills/claude/SKILL.md) · [`skills/cursor/docent.mdc`](./skills/cursor/docent.mdc).
+For deeper detail on the editor skill — manual install paths, what triggers it, what it does — see the [installation guide](#three-ways-to-start--pick-one-and-copy) at the top, plus the source files: [`skills/claude/SKILL.md`](./skills/claude/SKILL.md) · [`skills/cursor/docentic.mdc`](./skills/cursor/docentic.mdc).
 
 ---
 
 ## Use it in CI
 
-Drop this into `.github/workflows/docent.yml` to fail PRs that break the scaffold (broken `.agents/index.json`, missing spine files, schema violations):
+Drop this into `.github/workflows/docentic.yml` to fail PRs that break the scaffold (broken `.agents/index.json`, missing spine files, schema violations):
 
 ```yaml
-name: docent check
+name: docentic check
 on:
   pull_request:
   push:
     branches: [main]
 
 jobs:
-  docent-check:
+  docentic-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: intrepideai/docent@main
+      - uses: intrepideai/docentic@main
 ```
 
 Inputs (all optional):
 
 ```yaml
-- uses: intrepideai/docent@main
+- uses: intrepideai/docentic@main
   with:
-    path: '.'                     # repo path to check (default: workspace root)
-    warnings-as-errors: 'true'    # fail on warnings too (default: false)
-    json: 'false'                 # output JSON for piping (default: false)
-    node-version: '22'            # Node version to install (default: 22)
+    path: '.'                              # repo path to check (default: workspace root)
+    warnings-as-errors: 'true'             # fail on warnings too (default: false)
+    json: 'false'                          # output JSON for piping (default: false)
+    node-version: '20'                     # Node version to install (default: 20, min 20)
+    version: '@intrepideai/docentic@0.2.0' # pin a specific npm version (default: latest)
 ```
 
-Pin to a tag for stability once we publish releases (e.g. `intrepideai/docent@v0.1.0`). Until then `@main` tracks the latest.
+Pin to a tag for stability (e.g. `intrepideai/docentic@v0.2.0`) or pin the npm `version:` input — both work. `@main` tracks the latest unreleased commit.
 
 ---
 
@@ -337,27 +338,27 @@ Pin to a tag for stability once we publish releases (e.g. `intrepideai/docent@v0
 
 `.agents/index.json` ships with a JSON Schema. The scaffolded template includes a `$schema` reference, so editors with JSON Schema support (VS Code, Cursor, etc.) get autocomplete + validation out of the box.
 
-Schema URL: <https://raw.githubusercontent.com/intrepideai/docent/main/schemas/agents-index.schema.json>
+Schema URL: <https://raw.githubusercontent.com/intrepideai/docentic/main/schemas/agents-index.schema.json>
 
 To validate by hand:
 
 ```bash
 # Using ajv-cli
 npx -y ajv-cli validate \
-  -s https://raw.githubusercontent.com/intrepideai/docent/main/schemas/agents-index.schema.json \
+  -s https://raw.githubusercontent.com/intrepideai/docentic/main/schemas/agents-index.schema.json \
   -d .agents/index.json
 ```
 
-Or just run `docent check` — it does this validation built-in.
+Or just run `docentic check` — it does this validation built-in.
 
 ---
 
 ## How it fits with agents
 
-`docent` handles **scaffolding** only. Day-to-day maintenance — refreshing generated docs, surfacing research, updating HISTORY — runs as a separate agent loop you schedule externally (Claude Desktop tasks, cron + a harness, your platform of choice).
+`docentic` handles **scaffolding** only. Day-to-day maintenance — refreshing generated docs, surfacing research, updating HISTORY — runs as a separate agent loop you schedule externally (Claude Desktop tasks, cron + a harness, your platform of choice).
 
 Prompts split by job:
-- [`prompts/bootstrap.md`](./prompts/bootstrap.md) — one-shot content fill (after `docent init`)
+- [`prompts/bootstrap.md`](./prompts/bootstrap.md) — one-shot content fill (after `docentic init`)
 - [`prompts/config-seeder.md`](./prompts/config-seeder.md) — propose tailored `research/config.yml`
 - Daily maintenance (Scout / Researcher / Librarian / HISTORY Writer / Conflict Resolver) — see Intrepide's orchestrator library
 
@@ -365,7 +366,7 @@ Prompts split by job:
 
 ## Configuration
 
-### `.env` (for `docent populate`, coming soon)
+### `.env` (for `docentic populate`)
 
 Copy [`.env.example`](./.env.example) to `.env` and fill in one of:
 
@@ -375,7 +376,7 @@ Copy [`.env.example`](./.env.example) to `.env` and fill in one of:
 | OpenAI | `OPENAI_API_KEY` | |
 | Google | `GEMINI_API_KEY` | |
 
-`docent init` itself needs no API keys — it's pure scaffolding.
+`docentic init` itself needs no API keys — it's pure scaffolding.
 
 ### `research/config.yml` (per-repo)
 
@@ -395,10 +396,10 @@ The one file that's truly repo-specific. Topics, keywords, sources, cadence. Run
 
 ## Show your repo is agent-friendly
 
-If you've scaffolded `docent`, add the badge to your README so other agents and humans know:
+If you've scaffolded `docentic`, add the badge to your README so other agents and humans know:
 
 ```markdown
-[![agent-friendly: yes](https://img.shields.io/badge/agent--friendly-yes-7c3aed?style=flat-square)](https://github.com/intrepideai/docent)
+[![agent-friendly: yes](https://img.shields.io/badge/agent--friendly-yes-7c3aed?style=flat-square)](https://github.com/intrepideai/docentic)
 ```
 
 Renders as: ![agent-friendly: yes](https://img.shields.io/badge/agent--friendly-yes-7c3aed?style=flat-square)
@@ -408,8 +409,8 @@ Renders as: ![agent-friendly: yes](https://img.shields.io/badge/agent--friendly-
 ## Local development
 
 ```bash
-git clone git@github.com:intrepideai/docent.git
-cd docent
+git clone git@github.com:intrepideai/docentic.git
+cd docentic
 npm install
 npm run dev -- init /path/to/test/repo --dry-run    # iterate
 npm run build && npm link                            # try the binary
@@ -421,14 +422,14 @@ CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) typechecks + runs 
 
 ## Contributing
 
-Contributions welcome — `docent` is a tiny tool with a tight scope, so PRs that fit are easy to land.
+Contributions welcome — `docentic` is a tiny tool with a tight scope, so PRs that fit are easy to land.
 
 - Read [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, scope, and PR conventions
 - See [SECURITY.md](./SECURITY.md) to report a vulnerability privately
 - By participating you agree to the [Code of Conduct](./CODE_OF_CONDUCT.md)
 - Notable changes are tracked in [CHANGELOG.md](./CHANGELOG.md)
 
-Star the repo if `docent` is useful — it genuinely helps with discoverability.
+Star the repo if `docentic` is useful — it genuinely helps with discoverability.
 
 ---
 
@@ -445,7 +446,7 @@ Copyright © 2026 Intrepide.
 </p>
 
 <p align="center">
-  <a href="https://star-history.com/#intrepideai/docent&Date">
-    <img alt="star history" src="https://api.star-history.com/svg?repos=intrepideai/docent&type=Date" width="600">
+  <a href="https://star-history.com/#intrepideai/docentic&Date">
+    <img alt="star history" src="https://api.star-history.com/svg?repos=intrepideai/docentic&type=Date" width="600">
   </a>
 </p>

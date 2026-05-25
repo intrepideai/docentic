@@ -4,7 +4,7 @@
 >
 > **Vendor-neutral.** Any agent runtime (Claude Code, raw Anthropic API, Cursor, etc.) can follow this file. Claude Code users get a thin wrapper at [`.claude/skills/maintain-repo/SKILL.md`](../../.claude/skills/maintain-repo/SKILL.md) that just routes here.
 >
-> **Spec it implements:** <https://github.com/intrepideai/docent#readme>
+> **Spec it implements:** <https://github.com/intrepideai/docentic#readme>
 
 ## How invocation works
 
@@ -295,7 +295,7 @@ The REMOVALS.log entry preserves the permanent record even after the in-file tom
 
 ## See also
 
-- Spec: <https://github.com/intrepideai/docent#readme>
+- Spec: <https://github.com/intrepideai/docentic#readme>
 - Top-level index: [`AGENTS.md`](../../AGENTS.md)
 - Anchor: [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md)
 - Research config: [`research/config.yml`](../../research/config.yml)

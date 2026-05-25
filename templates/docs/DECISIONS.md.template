@@ -48,7 +48,7 @@ Adopt the standardized LLM-friendly docs template (see `~/Desktop/Intrepide/LLM-
 - Predictable LLM context
 
 **Negative:**
-- Initial scaffolding overhead per repo (automated by `@intrepideai/docent`)
+- Initial scaffolding overhead per repo (automated by `@intrepideai/docentic`)
 - Existing docs (CONTRIBUTING, DEVELOPERS, SETUP, etc.) coexist with the new spine
 - Discipline required to keep critical files up to date
 
@@ -71,4 +71,4 @@ Adopt the standardized LLM-friendly docs template (see `~/Desktop/Intrepide/LLM-
 
 ---
 
-**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will add ADRs covering this repo's significant architectural choices.**
+**Scaffolded by `@intrepideai/docentic`. The Bootstrap agent will add ADRs covering this repo's significant architectural choices.**

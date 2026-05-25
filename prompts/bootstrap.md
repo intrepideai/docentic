@@ -1,12 +1,12 @@
 # Bootstrap — fill in scaffolded TODOs
 
-> **What to do with this file:** copy everything below the `---` into your LLM of choice (Claude, ChatGPT, Gemini — any model that can read files in your repo). It will read your codebase and fill in the TODO sections in `AGENTS.md` and `docs/*.md` that `docent init` left behind.
+> **What to do with this file:** copy everything below the `---` into your LLM of choice (Claude, ChatGPT, Gemini — any model that can read files in your repo). It will read your codebase and fill in the TODO sections in `AGENTS.md` and `docs/*.md` that `docentic init` left behind.
 
 **Recommended model:** Claude Opus (or any frontier model — this is a high-context, single-shot task).
 
 ---
 
-You're an autonomous agent. The repo at your current working directory was just scaffolded with the `docent` template — see [docent on GitHub](https://github.com/intrepideai/docent). The scaffold laid down structure and frontmatter but left TODO markers in the content sections of `AGENTS.md` and most `docs/*.md` files.
+You're an autonomous agent. The repo at your current working directory was just scaffolded with the `docentic` template — see [docentic on GitHub](https://github.com/intrepideai/docentic). The scaffold laid down structure and frontmatter but left TODO markers in the content sections of `AGENTS.md` and most `docs/*.md` files.
 
 Your job: read the codebase and fill in every TODO marker with real content derived from what you find.
 
@@ -64,7 +64,7 @@ For each file with TODO markers, replace them with real content:
 ### `docs/DECISIONS.md`
 - Add ADRs for significant architectural choices (one per major decision)
 - Read git log for migration commits, framework changes, etc. — those are usually ADR-worthy
-- The scaffold seeds ADR 0001 with "Adopt the docent template" — keep that, then number new ADRs from 0002
+- The scaffold seeds ADR 0001 with "Adopt the docentic template" — keep that, then number new ADRs from 0002
 
 ### `docs/HISTORY.md`
 - Initial state entry describing what shape the repo is in right now
@@ -93,7 +93,7 @@ For each file with TODO markers, replace them with real content:
 
 ## Output
 
-When done, commit your changes on a new branch (e.g. `docent/populate-content`) and open a PR titled "chore: populate docent scaffold with real content". In the PR description, list the files you touched and note any sections you couldn't fill in.
+When done, commit your changes on a new branch (e.g. `docentic/populate-content`) and open a PR titled "chore: populate docentic scaffold with real content". In the PR description, list the files you touched and note any sections you couldn't fill in.
 
 ## Hard rules
 

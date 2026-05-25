@@ -62,15 +62,15 @@ jobs:
           jq -e . .agents/index.json > /dev/null
           jq -e . research/index.json > /dev/null
           # Verify it committed on the expected branch
-          test "$(git rev-parse --abbrev-ref HEAD)" = "docent/template-scaffold"
+          test "$(git rev-parse --abbrev-ref HEAD)" = "docentic/template-scaffold"
 
-          # Smoke test 3: docent check passes against the scaffold
+          # Smoke test 3: docentic check passes against the scaffold
           node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR"
 
-          # Smoke test 4: docent check exits non-zero when index.json is corrupt
+          # Smoke test 4: docentic check exits non-zero when index.json is corrupt
           echo '{ broken' > "$TESTDIR/.agents/index.json"
           if node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR" > /dev/null 2>&1; then
-            echo "✗ docent check should have failed on corrupt JSON"
+            echo "✗ docentic check should have failed on corrupt JSON"
             exit 1
           fi
 
@@ -79,15 +79,15 @@ jobs:
           echo '{"version":1,"repo":"x","docs":[]}' > "$TESTDIR/.agents/index.json"
           node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR" --json | jq -e . > /dev/null
 
-          # Smoke test 6: docent install --dry-run reports correct paths for both targets
+          # Smoke test 6: docentic install --dry-run reports correct paths for both targets
           node "$GITHUB_WORKSPACE/dist/cli.js" install --claude --cursor --dry-run --force | grep -q "would install"
 
-          # Smoke test 7: docent install --cursor --project writes a real file
+          # Smoke test 7: docentic install --cursor --project writes a real file
           INSTALL_TARGET=$(mktemp -d)
           node "$GITHUB_WORKSPACE/dist/cli.js" install --cursor --project "$INSTALL_TARGET" --force
-          test -f "$INSTALL_TARGET/.cursor/rules/docent.mdc"
+          test -f "$INSTALL_TARGET/.cursor/rules/docentic.mdc"
 
-          # Smoke test 8: docent populate --dry-run works without an API key
+          # Smoke test 8: docentic populate --dry-run works without an API key
           # (Restore the index that smoke test 5 mutated so populate sees a valid scaffold.)
           cd "$TESTDIR"
           node "$GITHUB_WORKSPACE/dist/cli.js" init "$TESTDIR" --no-commit --force > /dev/null
@@ -97,15 +97,15 @@ jobs:
           npx -y -p js-yaml@4 js-yaml "$GITHUB_WORKSPACE/action.yml" > /dev/null
 
           # Smoke test 10: fresh install from a sibling project produces a working binary
-          # This catches the bug we hit where `npx github:intrepideai/docent` fetched the
+          # This catches the bug we hit where `npx @intrepideai/docentic` fetched the
           # repo but never ran the build, so dist/cli.js didn't exist. The `prepare`
           # script in package.json should fix that — verify here.
           SIBLING=$(mktemp -d)
           cd "$SIBLING"
           npm init -y > /dev/null
           npm install --silent "$GITHUB_WORKSPACE"
-          test -x node_modules/.bin/docent || (echo "✗ binary missing after install"; exit 1)
-          node_modules/.bin/docent --version | grep -q '^0\.'
+          test -x node_modules/.bin/docentic || (echo "✗ binary missing after install"; exit 1)
+          node_modules/.bin/docentic --version | grep -q '^0\.'
 
           echo "✓ smoke tests passed"
 

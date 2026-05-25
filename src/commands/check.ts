@@ -1,4 +1,4 @@
-// `docent check` — validate a scaffolded repo without modifying anything.
+// `docentic check` — validate a scaffolded repo without modifying anything.
 //
 // Use cases:
 //   1. CI step: catch drift / corruption / missing files on every PR
@@ -8,7 +8,7 @@
 // Exit codes:
 //   0 — clean (no errors; warnings printed but don't fail)
 //   1 — errors found
-//   2 — could not run (not a docent repo, etc.)
+//   2 — could not run (not a docentic repo, etc.)
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
@@ -56,13 +56,13 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
     if (opts.json) {
       console.log(JSON.stringify({
         ok: false,
-        errors: [{ severity: 'error', path: '.agents/index.json', message: 'not found — is this a docent-scaffolded repo? run `docent init` first' }],
+        errors: [{ severity: 'error', path: '.agents/index.json', message: 'not found — is this a docentic-scaffolded repo? run `docentic init` first' }],
         warnings: [],
         summary: { files_checked: 0, spine_files_present: 0, spine_files_missing: REQUIRED_SPINE },
       }, null, 2));
     } else {
-      log.error(`Not a docent-scaffolded repo: ${repoPath}`);
-      log.dim(`  expected .agents/index.json — run \`docent init\` to scaffold`);
+      log.error(`Not a docentic-scaffolded repo: ${repoPath}`);
+      log.dim(`  expected .agents/index.json — run \`docentic init\` to scaffold`);
     }
     return 2;
   }
@@ -103,7 +103,7 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
   const spineIssues: ValidationIssue[] = spineMissing.map((f) => ({
     severity: 'error' as const,
     path: f,
-    message: `spine file missing — every docent-scaffolded repo must have this`,
+    message: `spine file missing — every docentic-scaffolded repo must have this`,
   }));
 
   // 3. Check that every file listed in docs[] actually exists
@@ -141,7 +141,7 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
   if (opts.json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
-    log.step(`docent check`);
+    log.step(`docentic check`);
     log.dim(`  repo: ${repoPath}`);
     log.blank();
 

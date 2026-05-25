@@ -56,6 +56,6 @@ If 3+ of "yes" → queue. Otherwise skip.
 
 ## See also
 
-- Spec: <https://github.com/intrepideai/docent#readme>
+- Spec: <https://github.com/intrepideai/docentic#readme>
 - Orchestrator: [`MAINTAIN.md`](../../MAINTAIN.md)
 - Source prompts: `scripts/llm-docs/prompts/scouts/<source>.md`

@@ -1,4 +1,4 @@
-// Gather context about the target repo to pass to the LLM during `docent populate`.
+// Gather context about the target repo to pass to the LLM during `docentic populate`.
 //
 // Includes: top-level dir tree, package manifest, recent git log, schema files,
 // route handler tree, existing README and root-level docs. Capped to keep the

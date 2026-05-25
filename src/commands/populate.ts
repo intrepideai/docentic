@@ -1,4 +1,4 @@
-// `docent populate` — fill scaffolded TODOs using an LLM.
+// `docentic populate` — fill scaffolded TODOs using an LLM.
 //
 // Reads .env (or process.env) for an Anthropic API key, gathers context from
 // the target repo, calls Claude with the bootstrap prompt + context, parses
@@ -101,7 +101,7 @@ interface DocEdit {
 export async function populateCommand(opts: PopulateOptions): Promise<number> {
   const repoPath = resolve(opts.path ?? process.cwd());
 
-  log.step('docent populate');
+  log.step('docentic populate');
   log.dim(`  repo: ${repoPath}`);
 
   // 1. Preflight
@@ -110,7 +110,7 @@ export async function populateCommand(opts: PopulateOptions): Promise<number> {
     return 1;
   }
   if (!existsSync(join(repoPath, 'AGENTS.md'))) {
-    log.error(`No AGENTS.md found — run \`docent init\` first`);
+    log.error(`No AGENTS.md found — run \`docentic init\` first`);
     return 1;
   }
 
@@ -119,7 +119,7 @@ export async function populateCommand(opts: PopulateOptions): Promise<number> {
   if (!apiKey && !opts.dryRun) {
     log.error(`No ANTHROPIC_API_KEY found in env or ${repoPath}/.env`);
     log.dim(`  Set it in .env (copy .env.example), or pass it inline:`);
-    log.dim(`  ANTHROPIC_API_KEY=sk-ant-... docent populate`);
+    log.dim(`  ANTHROPIC_API_KEY=sk-ant-... docentic populate`);
     log.dim(`  Or use --dry-run to inspect what would be sent without an API call.`);
     return 1;
   }
@@ -158,9 +158,9 @@ export async function populateCommand(opts: PopulateOptions): Promise<number> {
     .map(([f, content]) => `### ${f}\n\`\`\`markdown\n${content}\n\`\`\``)
     .join('\n\n');
 
-  const systemPrompt = `You are docent's bootstrap agent. Your single job is to fill in the TODO markers in the files below by reading the repository context provided.
+  const systemPrompt = `You are docentic's bootstrap agent. Your single job is to fill in the TODO markers in the files below by reading the repository context provided.
 
-Follow the instructions in the docent bootstrap prompt:
+Follow the instructions in the docentic bootstrap prompt:
 
 ${bootstrap}
 
@@ -180,7 +180,7 @@ ${contextBlock}
 
 # Files to populate
 
-The following files have TODO markers from the docent scaffold. Read the context above, then return new content for each.
+The following files have TODO markers from the docentic scaffold. Read the context above, then return new content for each.
 
 ${todoBlock}
 
@@ -305,7 +305,7 @@ Call the apply_doc_edits tool ONCE with edits for every file above. Skip any fil
     return 0;
   }
 
-  const branchName = opts.branch ?? 'docent/populate-content';
+  const branchName = opts.branch ?? 'docentic/populate-content';
   log.blank();
   log.step(`Committing on ${branchName}…`);
   try {
@@ -315,15 +315,15 @@ Call the apply_doc_edits tool ONCE with edits for every file above. Skip any fil
     addAll(repoPath);
     commit(
       repoPath,
-      `chore: populate docent scaffold with real content
+      `chore: populate docentic scaffold with real content
 
-Files populated by \`docent populate\`:
+Files populated by \`docentic populate\`:
 ${applied.map((f) => `  - ${f}`).join('\n')}
 
 Generated with ${opts.model ?? DEFAULT_MODEL}.
 Approx cost: $${actualCost.toFixed(2)}
 
-Co-Authored-By: docent populate <clyde@intrepide.ai>`,
+Co-Authored-By: docentic populate <clyde@intrepide.ai>`,
     );
     log.success(`Committed on ${branchName}`);
   } catch (err) {
@@ -347,8 +347,8 @@ Co-Authored-By: docent populate <clyde@intrepide.ai>`,
   try {
     push(repoPath, branchName);
     const url = openPR(repoPath, {
-      title: 'chore: populate docent scaffold with real content',
-      body: `Populated by \`docent populate\` using ${opts.model ?? DEFAULT_MODEL}.
+      title: 'chore: populate docentic scaffold with real content',
+      body: `Populated by \`docentic populate\` using ${opts.model ?? DEFAULT_MODEL}.
 
 ## Files populated
 ${applied.map((f) => `- \`${f}\``).join('\n')}
@@ -366,7 +366,7 @@ ${skipped.length > 0 ? skipped.map((s) => `- \`${s.file}\` — ${s.reason}`).joi
 - [ ] Navigation headers unchanged
 - [ ] Generated files (\`docs/STACK.md\`, \`DATA.md\`, \`API.md\`, \`MAP.md\`, \`INTEGRATIONS.md\`) NOT touched
 `,
-      label: 'docent',
+      label: 'docentic',
     });
     log.success(`PR opened: ${url}`);
   } catch (err) {

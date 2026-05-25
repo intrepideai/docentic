@@ -1,10 +1,10 @@
 {
-  "name": "@intrepideai/docent",
-  "version": "0.1.1",
+  "name": "@intrepideai/docentic",
+  "version": "0.2.0",
   "description": "Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.",
   "type": "module",
   "bin": {
-    "docent": "dist/cli.js"
+    "docentic": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -37,6 +37,7 @@
     "typescript": "~5.6.0"
   },
   "keywords": [
+    "docentic",
     "docent",
     "agents.md",
     "ai-friendly-docs",
@@ -55,11 +56,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/intrepideai/docent.git"
+    "url": "git+https://github.com/intrepideai/docentic.git"
   },
-  "homepage": "https://github.com/intrepideai/docent#readme",
+  "homepage": "https://github.com/intrepideai/docentic#readme",
   "bugs": {
-    "url": "https://github.com/intrepideai/docent/issues"
+    "url": "https://github.com/intrepideai/docentic/issues"
   },
   "author": "Intrepide <clyde@intrepide.ai> (https://github.com/intrepideai)",
   "publishConfig": {

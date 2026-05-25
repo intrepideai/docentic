@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Questions / discussion
-    url: https://github.com/intrepideai/docent/discussions
-    about: For open-ended questions, design discussion, or showcasing how you use docent.
+    url: https://github.com/intrepideai/docentic/discussions
+    about: For open-ended questions, design discussion, or showcasing how you use docentic.
   - name: Security issues
-    url: https://github.com/intrepideai/docent/security/advisories/new
+    url: https://github.com/intrepideai/docentic/security/advisories/new
     about: Please report security vulnerabilities privately, not in public issues.

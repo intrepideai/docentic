@@ -15,7 +15,7 @@ Until we cut a v1 release, only the latest commit on `main` is supported. Pre-1.
 
 Instead, use one of:
 
-1. **GitHub Security Advisories** (preferred): https://github.com/intrepideai/docent/security/advisories/new
+1. **GitHub Security Advisories** (preferred): https://github.com/intrepideai/docentic/security/advisories/new
 2. **Email**: `clyde@intrepide.ai`
 
 When reporting, please include:
@@ -34,18 +34,18 @@ When reporting, please include:
 ## Scope
 
 In scope:
-- The `docent` CLI itself (anything under `src/`)
+- The `docentic` CLI itself (anything under `src/`)
 - The template files copied into target repos (`templates/`)
 - The prompts shipped in the package (`prompts/`)
 - The published npm artifact (when we publish)
 
 Out of scope:
-- Vulnerabilities in repos that have been scaffolded by `docent` (file an issue with that repo)
+- Vulnerabilities in repos that have been scaffolded by `docentic` (file an issue with that repo)
 - Vulnerabilities in upstream dependencies (`commander`, Node itself, etc.) — please report those upstream
 
 ## Hardening notes
 
-- `docent` makes no network requests during `docent init` (pure local file ops + git/gh CLI invocations)
+- `docentic` makes no network requests during `docentic init` (pure local file ops + git/gh CLI invocations)
 - It does not read or transmit secrets / environment variables
 - It does not require elevated privileges
-- The future `docent populate` command will require an API key; that key is read from `.env` and sent only to the configured provider
+- The future `docentic populate` command will require an API key; that key is read from `.env` and sent only to the configured provider

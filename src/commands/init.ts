@@ -14,6 +14,7 @@ import {
   ghAvailable,
   openPR,
   push,
+  ensureLabel,
 } from '../lib/git.js';
 import { log } from '../lib/log.js';
 
@@ -22,6 +23,8 @@ export interface InitOptions {
   dryRun?: boolean;
   force?: boolean;
   minimal?: boolean;
+  spineOnly?: boolean;
+  forceIgnored?: boolean;
   noPr?: boolean;
   noCommit?: boolean;
   branch?: string;
@@ -29,7 +32,7 @@ export interface InitOptions {
 
 export async function initCommand(opts: InitOptions): Promise<number> {
   const repoPath = resolve(opts.path ?? process.cwd());
-  log.step(`llm-docs init`);
+  log.step(`docent init`);
   log.dim(`  repo: ${repoPath}`);
 
   // 1. Validate target
@@ -65,6 +68,13 @@ export async function initCommand(opts: InitOptions): Promise<number> {
   log.dim(`  ml:              ${stack.hasML ? 'yes' : 'no'}`);
   log.dim(`  mobile:          ${stack.hasMobile ? 'yes' : 'no'}`);
   log.dim(`  auto-detected:   ${autoDocs.length > 0 ? autoDocs.join(', ') : '(none)'}`);
+  log.dim(`  detected in:     ${stack.detectedIn.length > 0 ? stack.detectedIn.join(', ') : '(nothing found — generic scaffold)'}`);
+
+  if (stack.languages.length === 0) {
+    log.warn(`No languages detected — scaffold will be generic.`);
+    log.dim(`  If this is a monorepo with code under a non-standard path, that path won't be auto-discovered.`);
+    log.dim(`  Edit docs/STACK.md after scaffolding to fix.`);
+  }
 
   // 4. Branch
   const branchName = opts.branch ?? 'docent/template-scaffold';
@@ -94,7 +104,9 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     repoName,
     stack,
     minimal: opts.minimal,
+    spineOnly: opts.spineOnly,
     force: opts.force,
+    forceIgnored: opts.forceIgnored,
     dryRun: opts.dryRun,
   });
 
@@ -106,9 +118,27 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     }
   }
 
-  if (result.filesSkipped.length > 0) {
-    log.warn(`${result.filesSkipped.length} file(s) skipped:`);
-    log.list(result.filesSkipped.map((s) => `${s.path}  (${s.reason})`));
+  // Filter gitignored entries from the generic skipped list — they get a
+  // dedicated block below with actionable fix-it instructions, so listing
+  // them twice is noise.
+  const gitignoredPaths = new Set(result.filesGitignored);
+  const nonIgnoredSkips = result.filesSkipped.filter((s) => !gitignoredPaths.has(s.path));
+  if (nonIgnoredSkips.length > 0) {
+    log.warn(`${nonIgnoredSkips.length} file(s) skipped:`);
+    log.list(nonIgnoredSkips.map((s) => `${s.path}  (${s.reason})`));
+  }
+
+  // Hard-stop if .gitignore would swallow scaffolded files. We'd rather make
+  // the user notice and fix it than ship a commit that's missing AGENTS.md.
+  if (result.filesGitignored.length > 0 && !opts.forceIgnored) {
+    log.blank();
+    log.error(`${result.filesGitignored.length} file(s) would be ignored by .gitignore:`);
+    log.list(result.filesGitignored);
+    log.blank();
+    log.dim(`  These files were NOT written. To fix, either:`);
+    log.dim(`    (a) edit .gitignore to allow them (recommended — docent files should be tracked), or`);
+    log.dim(`    (b) re-run with --force-ignored to scaffold anyway (they'll still be ignored by git)`);
+    return 1;
   }
 
   if (opts.dryRun) {
@@ -162,10 +192,21 @@ export async function initCommand(opts: InitOptions): Promise<number> {
   log.step('Opening PR…');
   try {
     push(repoPath, branchName);
+    // Try to ensure the `llm-docs` label exists. If we can't create it
+    // (no repo write perms, or the GH token can't write labels), open the PR
+    // without the label rather than crashing the whole flow.
+    const labelOk = ensureLabel(repoPath, 'llm-docs', {
+      color: '7c3aed',
+      description: 'Scaffolded by docent — agent-friendly documentation',
+    });
+    if (!labelOk) {
+      log.warn(`Could not ensure 'llm-docs' label on this repo — opening PR without it.`);
+      log.dim(`  (gh CLI may lack write perms, or the repo blocks label create)`);
+    }
     const url = openPR(repoPath, {
-      title: 'chore: bootstrap llm-docs template',
+      title: 'chore: bootstrap docent template',
       body: prBody(repoName, stack, autoDocs, result.filesCreated.length),
-      label: 'llm-docs',
+      ...(labelOk ? { label: 'llm-docs' } : {}),
     });
     log.success(`PR opened: ${url}`);
   } catch (err) {
@@ -182,10 +223,14 @@ function nextSteps(opts: InitOptions): void {
   log.step('Next steps:');
   log.dim(`  1. Review the scaffold (or PR if one was opened)`);
   log.dim(`  2. Fill in AGENTS.md + docs/* TODOs:`);
-  log.dim(`       → paste prompts/bootstrap.md into Claude or any LLM with repo read access`);
-  log.dim(`       → or 'docent populate' once API-key mode is wired (coming soon)`);
+  log.dim(`       → in an agent with repo filesystem access (Claude Code, Cursor agent,`);
+  log.dim(`         Codex CLI, Gemini CLI…), paste prompts/bootstrap.md from the docent repo`);
+  log.dim(`       → or 'docent populate' (uses ANTHROPIC_API_KEY from .env)`);
   log.dim(`  3. Propose research topics with prompts/config-seeder.md`);
   log.dim(`  4. Merge, then schedule the 7 maintenance prompts (see prompts/ folder)`);
+  log.blank();
+  log.dim(`  Tip: 'docent init' is safe to re-run — existing files are skipped`);
+  log.dim(`       unless --force is passed. Use it to pick up template updates.`);
 }
 
 function commitMessage(

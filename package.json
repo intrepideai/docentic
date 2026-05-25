@@ -1,6 +1,6 @@
 {
   "name": "@intrepideai/docent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.",
   "type": "module",
   "bin": {
@@ -26,7 +26,7 @@
     ".env.example"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "dependencies": {
     "commander": "^12.1.0"

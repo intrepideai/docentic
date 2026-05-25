@@ -5,6 +5,7 @@ import { dirname, join, basename, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DetectedStack } from './detect-stack.js';
 import { autoDetectedDocs } from './detect-stack.js';
+import { filterIgnored } from './git.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,14 +16,17 @@ export interface ScaffoldOptions {
   repoPath: string;
   repoName: string;
   stack: DetectedStack;
-  minimal?: boolean;
+  minimal?: boolean;     // skip docs/* skeletons (keep infra + AGENTS.md)
+  spineOnly?: boolean;   // skip research/ and scripts/llm-docs/ (keep AGENTS.md + docs/)
   force?: boolean;
+  forceIgnored?: boolean; // scaffold files even if they're in .gitignore
   dryRun?: boolean;
 }
 
 export interface ScaffoldResult {
   filesCreated: string[];
   filesSkipped: { path: string; reason: string }[];
+  filesGitignored: string[];  // files we would have written but are .gitignored
   dirsCreated: string[];
 }
 
@@ -100,6 +104,16 @@ const AUTO_DETECTED_TEMPLATES: Record<keyof Pick<DetectedStack, 'hasFrontend' | 
 const MINIMAL_SKIP_PATTERNS = [
   /^research\//,
   /^docs\/(API|DATA|STACK|MAP|INTEGRATIONS|SECURITY-NOTES|DECISIONS|HISTORY|GLOSSARY|CONVENTIONS|OPS)\.md$/,
+];
+
+// Files that should be skipped in --spine-only mode (keep AGENTS.md + docs/ +
+// .agents/ inventory, skip the research/ pipeline and scripts/llm-docs/ tooling).
+// Use case: a repo that just wants the agent-friendly doc spine and doesn't
+// want to run the research / daily maintenance loop yet.
+const SPINE_ONLY_SKIP_PATTERNS = [
+  /^research\//,
+  /^scripts\/llm-docs\//,
+  /^\.claude\//,
 ];
 
 function substitute(content: string, vars: Record<string, string>): string {
@@ -191,6 +205,7 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
   const result: ScaffoldResult = {
     filesCreated: [],
     filesSkipped: [],
+    filesGitignored: [],
     dirsCreated: [],
   };
 
@@ -206,24 +221,45 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
     DOCS_ARRAY: docsArr,
   };
 
-  // Copy always-files
+  // Decide which mode-based skip filter applies. --minimal and --spine-only
+  // both narrow the scaffold; --minimal is the stricter of the two.
+  const skipForMode = (targetRelPath: string): boolean => {
+    if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
+    if (opts.spineOnly && SPINE_ONLY_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
+    return false;
+  };
+
+  // Build the full list of (template, target) pairs we plan to write so we
+  // can pre-check against .gitignore. Any file the repo ignores would be
+  // silently swallowed on commit — surface it loudly before scaffolding.
+  const planned: Array<{ tmpl: string; target: string }> = [];
   for (const f of ALWAYS_FILES) {
-    if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(f))) continue;
-    copyOne(f, f, opts, vars, result);
+    if (skipForMode(f)) continue;
+    planned.push({ tmpl: f, target: f });
   }
-
-  // Copy templated files (with placeholder substitution)
   for (const [tmpl, target] of Object.entries(TEMPLATED_FILES)) {
-    if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(target))) continue;
-    copyOne(tmpl, target, opts, vars, result);
+    if (skipForMode(target)) continue;
+    planned.push({ tmpl, target });
+  }
+  for (const [stackKey, file] of Object.entries(AUTO_DETECTED_TEMPLATES) as Array<[keyof DetectedStack, { tmpl: string; target: string }]>) {
+    if (!opts.stack[stackKey]) continue;
+    if (skipForMode(file.target)) continue;
+    planned.push({ tmpl: file.tmpl, target: file.target });
   }
 
-  // Auto-detected docs based on stack
-  for (const [stackKey, file] of Object.entries(AUTO_DETECTED_TEMPLATES) as Array<[keyof DetectedStack, { tmpl: string; target: string }]>) {
-    if (opts.stack[stackKey]) {
-      if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(file.target))) continue;
-      copyOne(file.tmpl, file.target, opts, vars, result);
+  // Run gitignore check. Result is the subset of planned targets that the
+  // repo's .gitignore would drop on `git add`. If --force-ignored is set we
+  // still write them (caller can edit .gitignore after); otherwise we record
+  // them in result.filesGitignored and skip writing so the caller can warn.
+  const ignored = new Set(filterIgnored(opts.repoPath, planned.map((p) => p.target)));
+  result.filesGitignored = Array.from(ignored).sort();
+
+  for (const { tmpl, target } of planned) {
+    if (ignored.has(target) && !opts.forceIgnored) {
+      result.filesSkipped.push({ path: target, reason: 'gitignored (use --force-ignored to write anyway)' });
+      continue;
     }
+    copyOne(tmpl, target, opts, vars, result);
   }
 
   return result;

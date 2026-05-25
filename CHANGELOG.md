@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-05-24
+
+First post-launch hardening release driven by feedback from a real-world
+install against a polyglot Laravel + Flutter + Terraform monorepo. The
+common thread: be louder when the environment disagrees with our defaults,
+and detect more of what's actually in the repo.
+
+### Added
+- `--spine-only` flag on `docent init` — scaffold only `AGENTS.md` + `docs/` + `.agents/`, skip the `research/` pipeline and `scripts/llm-docs/` tooling. Good fit for repos that want the agent-friendly doc spine but aren't ready to run the daily maintenance loop yet. Drops the scaffold from ~57 files to ~17.
+- `--force-ignored` flag on `docent init` — scaffold files even when they would be dropped by `.gitignore`. Default behavior is now a hard-stop with the full list (was: silently let `git add` swallow them).
+- Stack detection now walks 1-deep into common monorepo / polyglot layouts (`apps/*`, `packages/*`, `backend`, `frontend*`, `mobile*`, `infrastructure`, `api`, `server`, `web`, `client`, `app`) so non-Node stacks aren't missed when the root is Node-ish.
+- Detection added for: PHP / Composer (Laravel, Symfony), Dart / Flutter (`pubspec.yaml`), Rust (`Cargo.toml`), Go (`go.mod`), Ruby (`Gemfile`), Java / Kotlin (Maven + Gradle Kotlin), Swift / Obj-C, Astro, SvelteKit, Nuxt, Solid, Hono, Drizzle, Supabase JS, conda environments, Docker Compose variants (`compose.yml`, `compose.yaml`), Kubernetes (`k8s/`, `kustomization.*`, `helm/`).
+- `detectedIn` field on `DetectedStack` — surfaces which subdirs the detector actually inspected, so users can verify the auto-detected docs aren't running on a misread.
+- `git.ts` helpers: `labelExists`, `createLabel`, `ensureLabel`, `filterIgnored`.
+- README "Useful flags" table under the install section, and an explicit "agent with repo filesystem access" callout on the LLM-chat onboarding option (was ambiguous — stock ChatGPT / Claude.ai web can't actually run `npx`).
+- CI matrix now tests on Node 20 + 22; new smoke tests cover the gitignore halt, `--force-ignored` override, `--spine-only` mode, and monorepo subdir detection.
+
+### Fixed
+- **`gh pr create --label llm-docs` no longer crashes** if the label doesn't exist on the repo. We now `ensureLabel` first (creating it if we can), and if creation fails (no write perms), we open the PR without the label rather than failing the whole flow.
+- **`docent init` no longer silently scaffolds files into `.gitignore`.** Before scaffolding, we run `git check-ignore` over every planned target. If any would be ignored, we fail early with the full list and a fix-it suggestion. `--force-ignored` overrides.
+- **Stack detection no longer locks onto the root `package.json`** and misses everything else. Polyglot repos with a Node tooling root but real code under `backend/` (Laravel), `mobile/` (Flutter), `infrastructure/` (Terraform), etc. are now detected end-to-end.
+
+### Changed
+- `engines.node` lowered from `>=22` to `>=20`. Node 22 is too new to be the minimum for a tool meant to drop into existing repos; Node 20 is LTS and ubiquitous.
+- `docent init` prints the `detectedIn` subdir list and warns loudly if no languages were detected (so generic-scaffold-on-a-real-repo is no longer a silent surprise).
+- Next-steps output now explicitly says `docent init` is safe to re-run for picking up template updates.
+- `init` no longer logs as `llm-docs init` — now matches the binary name (`docent init`).
+
 ### Added
 - `prompts/conflict-resolver.md` — the 3rd public-facing orchestrator prompt. Handles hash conflicts on generated files (3-way diff + classification: clarification / out-of-scope / fundamental). Opus-class recommended.
 
@@ -68,5 +96,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - CI: typecheck + two smoke tests (dry-run, full scaffold)
 - README with dual copy-paste hero (terminal + LLM prompt), comparison table, Mermaid spine diagram, "agent-friendly" badge for downstream repos
 
-[Unreleased]: https://github.com/intrepideai/docent/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/intrepideai/docent/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/intrepideai/docent/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/intrepideai/docent/releases/tag/v0.1.0

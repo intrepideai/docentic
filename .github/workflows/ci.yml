@@ -8,12 +8,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Lower bound matches package.json engines.node (>=20). Upper bound
+        # tracks current LTS so we catch breakage on the version most users
+        # actually have installed.
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install
@@ -101,3 +108,81 @@ jobs:
           node_modules/.bin/docent --version | grep -q '^0\.'
 
           echo "✓ smoke tests passed"
+
+      - name: Smoke test — gitignored AGENTS.md halts the scaffold (v0.1.1)
+        run: |
+          IGNORED=$(mktemp -d)
+          cd "$IGNORED"
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "CI"
+          echo '{"name":"ignored-smoke"}' > package.json
+          # Force AGENTS.md (and the whole docs/ tree) into .gitignore to
+          # reproduce the bug from the v0.1.0 install report.
+          printf 'AGENTS.md\ndocs/\n' > .gitignore
+          git add -A && git commit -q -m "init with gitignore"
+
+          # Run 1: default behavior should hard-stop with a clear warning
+          # and exit non-zero, and NOT have written AGENTS.md. Capture stdout
+          # AND stderr — log.error goes to stderr but the file list goes to
+          # stdout via log.list.
+          if node "$GITHUB_WORKSPACE/dist/cli.js" init "$IGNORED" --no-commit > combined.log 2>&1; then
+            echo "✗ init should have failed when AGENTS.md is gitignored"
+            cat combined.log
+            exit 1
+          fi
+          grep -q "would be ignored" combined.log || (echo "✗ missing gitignore warning"; cat combined.log; exit 1)
+          grep -q "AGENTS.md" combined.log || (echo "✗ AGENTS.md should appear in ignored list"; cat combined.log; exit 1)
+          test ! -f "$IGNORED/AGENTS.md" || (echo "✗ AGENTS.md should not have been written"; exit 1)
+
+          # Run 2: --force-ignored writes the files anyway. (They'll still be
+          # ignored by git, but the user opted in.)
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$IGNORED" --no-commit --force-ignored > /dev/null
+          test -f "$IGNORED/AGENTS.md" || (echo "✗ --force-ignored should have written AGENTS.md"; exit 1)
+
+          echo "✓ gitignore smoke test passed"
+
+      - name: Smoke test — spine-only mode (v0.1.1)
+        run: |
+          SPINE=$(mktemp -d)
+          cd "$SPINE"
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "CI"
+          echo '{"name":"spine-smoke"}' > package.json
+          git add -A && git commit -q -m "init"
+
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$SPINE" --no-commit --spine-only > /dev/null
+
+          # Spine-only should keep these
+          test -f "$SPINE/AGENTS.md" || (echo "✗ spine-only should have written AGENTS.md"; exit 1)
+          test -f "$SPINE/docs/ARCHITECTURE.md" || (echo "✗ spine-only should have written docs/ARCHITECTURE.md"; exit 1)
+          test -f "$SPINE/.agents/index.json" || (echo "✗ spine-only should have written .agents/index.json"; exit 1)
+
+          # Spine-only should drop these
+          test ! -d "$SPINE/research" || (echo "✗ spine-only should NOT have written research/"; exit 1)
+          test ! -d "$SPINE/scripts/llm-docs" || (echo "✗ spine-only should NOT have written scripts/llm-docs/"; exit 1)
+          test ! -d "$SPINE/.claude" || (echo "✗ spine-only should NOT have written .claude/"; exit 1)
+
+          echo "✓ spine-only smoke test passed"
+
+      - name: Smoke test — stack detection walks into apps/* (v0.1.1)
+        run: |
+          MONO=$(mktemp -d)
+          cd "$MONO"
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "CI"
+          # Outer root has nothing recognizable; real code lives under backend/.
+          # Pre-v0.1.1 this would have produced a generic scaffold with no
+          # framework/language signal.
+          mkdir -p backend
+          echo '{"name":"laravel-app","require":{"laravel/framework":"^11"}}' > backend/composer.json
+          git add -A && git commit -q -m "init monorepo"
+
+          # Capture output to verify framework + detectedIn surfaced
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$MONO" --no-commit > out.log 2>&1
+          grep -q "framework:.*laravel" out.log || (echo "✗ Laravel framework not detected from backend/composer.json"; cat out.log; exit 1)
+          grep -q "detected in:.*backend" out.log || (echo "✗ 'detected in' should include backend"; cat out.log; exit 1)
+
+          echo "✓ stack detection smoke test passed"

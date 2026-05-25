@@ -50,7 +50,7 @@ npx github:intrepideai/docent init
 
 That commits a `docent/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Stack-aware auto-detection.
 
-### 2. In any LLM chat (Claude · ChatGPT · Cursor · Codex · Gemini · …)
+### 2. In any agent with repo filesystem access (Claude Code · Cursor agent · Codex CLI · Gemini CLI · …)
 
 ```text
 Make the repo at <YOUR-REPO-PATH> agent-friendly using docent (https://github.com/intrepideai/docent).
@@ -64,6 +64,8 @@ Begin.
 ```
 
 Replace `<YOUR-REPO-PATH>` with your repo's path. Your agent runs scaffold + content fill + PR in one shot.
+
+> **Heads up:** this path needs an agent that can shell out and edit files — Claude Code, Cursor's agent mode, Codex CLI, Gemini CLI, OpenHands, Aider, etc. Stock chat surfaces (ChatGPT, Claude.ai web) don't have repo access and won't be able to run step 2. For those, use option 1 in your terminal first, then paste [`prompts/bootstrap.md`](./prompts/bootstrap.md) into chat with the relevant file contents.
 
 ### 3. In your editor (Claude Code or Cursor)
 
@@ -145,12 +147,26 @@ git clone git@github.com:intrepideai/docent.git
 cd docent && npm install && npm run build && npm link
 ```
 
+#### Useful flags
+
+| Flag | What it does |
+|---|---|
+| `--dry-run` | Print what would be created and exit; touch nothing. |
+| `--minimal` | Skip the `docs/*` spine; scaffold only `AGENTS.md` + `.agents/` + scripts. |
+| `--spine-only` | Scaffold only `AGENTS.md` + `docs/` + `.agents/` — skip the `research/` pipeline and `scripts/llm-docs/`. Good fit for repos that aren't ready to run the daily maintenance loop yet. |
+| `--force` | Overwrite existing files. By default, anything that already exists is skipped. |
+| `--force-ignored` | Scaffold a file even if `.gitignore` would drop it on `git add`. (Default: hard-stop with the list, so you can fix `.gitignore` first.) |
+| `--no-pr` | Commit on a branch, but don't open a PR. |
+| `--no-commit` | Write files in place, skip git operations entirely. |
+
+`docent init` is **safe to re-run**. Existing files are skipped unless you pass `--force`, so you can run it again to pick up template updates without clobbering local edits.
+
 ### 2. Fill the content
 
 The scaffold leaves TODO markers in `AGENTS.md` and `docs/*.md` — real content depends on your codebase. Two ways:
 
-- **Manual mode** (any LLM, no API key): paste [`prompts/bootstrap.md`](./prompts/bootstrap.md) — or the shorter prompt from the [hero section](#two-ways-to-start--pick-one-and-copy) — into your agent of choice.
-- **Automated mode** *(coming soon)*: copy [`.env.example`](./.env.example) → `.env`, add `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY`, then `docent populate`.
+- **Manual mode** (filesystem-capable agent, no API key needed): paste [`prompts/bootstrap.md`](./prompts/bootstrap.md) — or the shorter prompt from the [hero section](#three-ways-to-start--pick-one-and-copy) — into Claude Code, Cursor's agent mode, Codex CLI, Gemini CLI, OpenHands, or any other agent that can read and write your repo's files directly. (Stock ChatGPT and Claude.ai web won't work here — they can't see your filesystem.)
+- **Automated mode**: copy [`.env.example`](./.env.example) → `.env`, add `ANTHROPIC_API_KEY`, then `docent populate`.
 
 ### 3. Schedule maintenance
 

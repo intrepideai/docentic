@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('docent')
   .description('Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.')
-  .version('0.1.0');
+  .version('0.1.1');
 
 program
   .command('init')
@@ -21,6 +21,8 @@ program
   .option('-n, --dry-run', 'show what would be created without writing')
   .option('-f, --force', 'overwrite existing files')
   .option('-m, --minimal', 'only infrastructure (no docs/* skeletons)')
+  .option('--spine-only', 'scaffold AGENTS.md + docs/ only (skip research/ and scripts/llm-docs/)')
+  .option('--force-ignored', 'scaffold files even when they would be ignored by .gitignore')
   .option('--no-pr', 'commit on a branch but do not open a PR')
   .option('--no-commit', 'scaffold files without git operations')
   .option('-b, --branch <name>', 'branch name (default: docent/template-scaffold)')
@@ -30,6 +32,8 @@ program
       dryRun: opts.dryRun,
       force: opts.force,
       minimal: opts.minimal,
+      spineOnly: opts.spineOnly,
+      forceIgnored: opts.forceIgnored,
       noPr: !opts.pr, // commander inverts --no-pr
       noCommit: !opts.commit,
       branch: opts.branch,

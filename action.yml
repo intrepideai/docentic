@@ -1,5 +1,5 @@
 name: 'docentic'
-description: 'Validate that a repo follows the docentic agent-friendly template — runs `docentic check` against your codebase.'
+description: 'Validate the agent-friendly docs spine in any repo. Fail PRs that break AGENTS.md / docs/ / .agents/index.json.'
 author: 'Intrepide'
 
 branding:
@@ -32,6 +32,9 @@ outputs:
   ok:
     description: '"true" if the check passed cleanly, "false" otherwise'
     value: ${{ steps.docentic-check.outputs.ok }}
+  check-summary:
+    description: 'Single-line summary like "errors=2 warnings=1 spine_missing=0" — handy for posting back to PR comments'
+    value: ${{ steps.docentic-check.outputs.check-summary }}
 
 runs:
   using: 'composite'
@@ -45,6 +48,36 @@ runs:
       id: docentic-check
       shell: bash
       run: |
+        # Always capture --json first so we can emit a structured summary
+        # regardless of whether the user wants human or JSON output. npx
+        # caches the package, so the second invocation below is near-free.
+        JSON_FILE="$(mktemp)"
+        set +e
+        npx -y "${{ inputs.version }}" check "${{ inputs.path }}" --json > "$JSON_FILE" 2>/dev/null
+        json_exit=$?
+        set -e
+
+        # Derive the summary. Use jq if available (it ships in GitHub-hosted
+        # runners); otherwise fall back to a Node one-liner so self-hosted
+        # runners without jq still work.
+        if command -v jq >/dev/null; then
+          err_count=$(jq '.errors | length' "$JSON_FILE" 2>/dev/null || echo "?")
+          warn_count=$(jq '.warnings | length' "$JSON_FILE" 2>/dev/null || echo "?")
+          spine_missing=$(jq '.summary.spine_files_missing | length' "$JSON_FILE" 2>/dev/null || echo "?")
+        else
+          read -r err_count warn_count spine_missing < <(
+            node -e "
+              const r = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf-8'));
+              console.log((r.errors||[]).length, (r.warnings||[]).length, ((r.summary||{}).spine_files_missing||[]).length);
+            " "$JSON_FILE" 2>/dev/null
+          ) || { err_count="?"; warn_count="?"; spine_missing="?"; }
+        fi
+        summary="errors=${err_count} warnings=${warn_count} spine_missing=${spine_missing}"
+        echo "check-summary=${summary}" >> "$GITHUB_OUTPUT"
+        echo "::notice title=docentic check::${summary}"
+
+        # Now run the user-visible check (cached npx — fast). Human-readable
+        # by default; respects --json / --warnings-as-errors inputs.
         ARGS=()
         if [ "${{ inputs.warnings-as-errors }}" = "true" ]; then
           ARGS+=("--warnings-as-errors")

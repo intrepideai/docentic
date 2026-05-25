@@ -1,6 +1,6 @@
 {
   "name": "@intrepideai/docentic",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.",
   "type": "module",
   "bin": {

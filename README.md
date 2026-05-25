@@ -13,6 +13,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@intrepideai/docentic"><img alt="npm" src="https://img.shields.io/npm/v/@intrepideai/docentic?style=flat-square&color=7c3aed&label=npm"></a>
+  <a href="https://github.com/marketplace/actions/docentic"><img alt="GitHub Marketplace" src="https://img.shields.io/badge/marketplace-docentic-7c3aed?style=flat-square&logo=github"></a>
   <a href="https://github.com/intrepideai/docentic/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/intrepideai/docentic/ci.yml?branch=main&style=flat-square&label=ci"></a>
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square"></a>
   <img alt="agent-friendly: yes" src="https://img.shields.io/badge/agent--friendly-yes-7c3aed?style=flat-square">
@@ -331,6 +332,31 @@ Inputs (all optional):
 ```
 
 Pin to a tag for stability (e.g. `intrepideai/docentic@v0.2.0`) or pin the npm `version:` input — both work. `@main` tracks the latest unreleased commit.
+
+Outputs:
+
+| Output | Description |
+|---|---|
+| `ok` | `"true"` if check passed, `"false"` otherwise — handy for `if: steps.docentic.outputs.ok == 'false'` |
+| `check-summary` | One-line summary like `errors=2 warnings=1 spine_missing=0` — pipe into a PR comment or Slack message |
+
+Example: post the summary to the PR on failure:
+
+```yaml
+- id: docentic
+  uses: intrepideai/docentic@main
+  continue-on-error: true
+
+- if: steps.docentic.outputs.ok == 'false'
+  uses: actions/github-script@v7
+  with:
+    script: |
+      github.rest.issues.createComment({
+        ...context.repo,
+        issue_number: context.issue.number,
+        body: `🟣 docentic: ${{ steps.docentic.outputs.check-summary }} — see [Actions log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+      })
+```
 
 ---
 

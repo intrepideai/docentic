@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-05-25
+
+Marketplace prep release. Tweaks to the GitHub Action so its listing looks
+sharper on the Marketplace tile, plus a new output for downstream automation.
+
+### Added
+- **`check-summary` output** on the GitHub Action — a one-line string like `errors=2 warnings=1 spine_missing=0`. Captured by always running `docentic check --json` first (cached npx, near-free), parsed with jq with a Node fallback for self-hosted runners. Pipe it into a PR comment or Slack message:
+  ```yaml
+  - id: docentic
+    uses: intrepideai/docentic@main
+    continue-on-error: true
+  - if: steps.docentic.outputs.ok == 'false'
+    run: echo "🟣 ${{ steps.docentic.outputs.check-summary }}"
+  ```
+  The action also emits a `::notice::` annotation with the same summary so it shows up at the top of the Actions log without any extra wiring.
+- **Marketplace badge** in the README badge strip.
+
+### Changed
+- **Tightened the GitHub Action description.** From `Validate that a repo follows the docentic agent-friendly template — runs `docentic check` against your codebase.` to `Validate the agent-friendly docs spine in any repo. Fail PRs that break AGENTS.md / docs/ / .agents/index.json.` — better fit for the Marketplace tile preview.
+
 ## [0.2.0] — 2026-05-25
 
 The rebrand release: `docent` → `docentic`.
@@ -125,7 +145,8 @@ and detect more of what's actually in the repo.
 - CI: typecheck + two smoke tests (dry-run, full scaffold)
 - README with dual copy-paste hero (terminal + LLM prompt), comparison table, Mermaid spine diagram, "agent-friendly" badge for downstream repos
 
-[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/intrepideai/docentic/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/intrepideai/docentic/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/intrepideai/docentic/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/intrepideai/docentic/releases/tag/v0.1.0

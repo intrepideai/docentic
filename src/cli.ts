@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('docentic')
   .description('Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.')
-  .version('0.2.0');
+  .version('0.2.1');
 
 program
   .command('init')

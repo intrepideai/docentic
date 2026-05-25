@@ -302,7 +302,7 @@ For deeper detail on the editor skill — manual install paths, what triggers it
 
 ## Use it in CI
 
-Drop this into `.github/workflows/docentic.yml` to fail PRs that break the scaffold (broken `.agents/index.json`, missing spine files, schema violations):
+Available on the [**GitHub Marketplace**](https://github.com/marketplace/actions/docentic). Drop this into `.github/workflows/docentic.yml` to fail PRs that break the scaffold (broken `.agents/index.json`, missing spine files, schema violations):
 
 ```yaml
 name: docentic check

@@ -1,0 +1,65 @@
+name: Bug report
+description: Something docent did wrong, crashed on, or produced incorrectly
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did docent do, and what did you expect it to do instead?
+      placeholder: |
+        I ran `docent init` against my Next.js repo and ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal repro
+      description: The smallest commands or steps that reproduce the bug.
+      render: bash
+      placeholder: |
+        cd $(mktemp -d) && git init -q
+        echo '{"name":"x","dependencies":{"...":"..."}}' > package.json
+        git add -A && git commit -q -m init
+        npx github:intrepideai/docent init --dry-run
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Actual output
+      description: Paste the actual terminal output (use a fenced code block).
+      render: text
+  - type: input
+    id: docent-version
+    attributes:
+      label: docent version
+      description: From `docent --version` (or the commit SHA if running from source).
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: From `node --version`.
+      placeholder: v22.x
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Linux
+        - Windows (WSL)
+        - Windows (native)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, screenshots, related links — anything that helps us understand.

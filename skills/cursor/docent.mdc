@@ -1,0 +1,58 @@
+---
+description: Scaffold the docent template into a repo to make it agent-friendly. Activates when the user says "docent this repo", "scaffold docent", "make this repo agent-friendly", or similar.
+globs:
+alwaysApply: false
+---
+
+# docent — agent-friendly repo scaffolder
+
+When the user asks you to "docent this repo" or "make this repo agent-friendly":
+
+## Step 1 — Run the scaffold
+
+From the repo root:
+
+```bash
+npx -y github:intrepideai/docent init
+```
+
+This creates a `docent/template-scaffold` branch with ~50 files: `AGENTS.md` at root, a `docs/` spine (ARCHITECTURE, STACK, DATA, API, MAP, OPS, CONVENTIONS, GLOSSARY, INTEGRATIONS, SECURITY-NOTES, DECISIONS, HISTORY), `.agents/` control plane, a `research/` pipeline, and a `maintain-repo` Claude skill.
+
+Stack detection auto-adds `docs/UI.md` / `INFRA.md` / `ML.md` / `MOBILE.md` when appropriate.
+
+If `gh` CLI is configured, a PR opens automatically.
+
+## Step 2 — Offer to fill the content
+
+The scaffold leaves TODO markers in `AGENTS.md` and `docs/*.md`. Ask:
+
+> "Scaffold done. Want me to fill in the AGENTS.md and docs/* TODOs by reading the codebase?"
+
+If yes, fetch and follow the bootstrap prompt at:
+<https://github.com/intrepideai/docent/blob/main/prompts/bootstrap.md>
+
+Open a follow-up PR titled `chore: populate docent scaffold with real content`.
+
+## Step 3 — Offer config seeding
+
+After content is filled, ask:
+
+> "Want me to propose research topics tailored to this codebase?"
+
+If yes, follow:
+<https://github.com/intrepideai/docent/blob/main/prompts/config-seeder.md>
+
+Write `research/config.proposed.yml` (don't overwrite `research/config.yml`) and open a PR.
+
+## Hard rules
+
+- Never modify generated files (`docs/STACK.md`, `DATA.md`, `API.md`, `MAP.md`, `INTEGRATIONS.md`) — they're owned by `scripts/llm-docs/gen-*.sh`
+- Never edit anything under `scripts/llm-docs/` or `research/` infrastructure
+- Never auto-merge PRs — humans review
+- If the cwd isn't a git repo, tell the user to `git init` first
+- If `AGENTS.md` already exists, the CLI exits cleanly — report "already scaffolded" rather than forcing
+
+## More
+
+- Spec: <https://github.com/intrepideai/docent#readme>
+- Validate: `npx -y github:intrepideai/docent check`

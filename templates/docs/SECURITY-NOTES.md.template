@@ -1,0 +1,59 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: review
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# Security Notes
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Threat model, sensitive data flows, and compliance posture for this codebase.
+> **Note:** This is NOT the vulnerability-reporting policy. For reporting a security issue, see `SECURITY.md` at the repo root (GitHub convention).
+
+## Trust boundaries
+
+_TODO: where does untrusted input enter? Where does sensitive data live? Network / process / database boundaries._
+
+## Authentication model
+
+_TODO: how users prove who they are._
+
+## Authorization model
+
+_TODO: how access decisions are made._
+
+## Sensitive data
+
+_TODO: table of sensitive fields, where stored, sensitivity, handling rules._
+
+## Secrets
+
+_TODO: how secrets are managed across environments. Cross-reference [OPS.md](./OPS.md)._
+
+## Known risks
+
+_TODO: table of known risks with mitigation status._
+
+## Compliance
+
+_TODO: HIPAA / SOC2 / GDPR / PCI / other regulatory considerations, or note their absence._
+
+## Reporting
+
+For vulnerabilities, see the root `SECURITY.md`.
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [DATA.md](./DATA.md) — what's stored and how it's keyed
+- [API.md](./API.md) — auth checks per endpoint
+- [INTEGRATIONS.md](./INTEGRATIONS.md) — external services and secrets
+- [OPS.md](./OPS.md) — secret management workflow
+
+---
+
+**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will fill in the TODOs based on repo analysis.**

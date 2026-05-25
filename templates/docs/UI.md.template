@@ -1,0 +1,67 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: auto_delayed:24h
+updated: {{TIMESTAMP}}
+hash: pending
+auto_detected: frontend
+trigger: frontend stack detected
+---
+
+# UI / Frontend
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Design system, component inventory, and frontend conventions.
+
+## Design system layers
+
+_TODO: how UI primitives → patterns → app-level components are organized._
+
+## Styling
+
+_TODO: CSS framework (Tailwind / CSS modules / styled-components), theme tokens, dark mode strategy._
+
+## Component inventory
+
+_TODO: key shared components (Button, Input, Modal, etc.) and where they live._
+
+## Iconography
+
+_TODO: icon library, how to add new icons._
+
+## Animation
+
+_TODO: animation library (if any) and patterns._
+
+## Typography
+
+_TODO: fonts, scale, prose styles._
+
+## Accessibility
+
+_TODO: a11y baseline, keyboard navigation, screen reader testing._
+
+## Performance
+
+_TODO: code splitting, lazy loading, image optimization._
+
+## Patterns to follow
+
+_TODO: forms, modals, loading states, error boundaries._
+
+## What NOT to do
+
+_TODO: anti-patterns, deprecated UI libraries, raw HTML buttons, etc._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [STACK.md](./STACK.md) — full UI dep list
+- [CONVENTIONS.md](./CONVENTIONS.md) — broader code conventions
+- [MAP.md](./MAP.md) — where the UI code lives
+
+---
+
+**Scaffolded by `@intrepideai/docent` (auto-detected: frontend). The Bootstrap agent will fill in the TODOs based on inspection of the repo.**

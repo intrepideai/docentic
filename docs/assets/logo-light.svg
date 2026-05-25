@@ -1,0 +1,31 @@
+<svg width="160" height="160" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="docent logo — hub-and-spoke">
+  <!-- Hub and spoke: the docent design principle made visual.
+       The anchor at center is ARCHITECTURE.md; spokes are the spine files. -->
+  <g stroke="#7c3aed" stroke-linecap="round" fill="none">
+    <!-- Outer ring: the repo boundary -->
+    <circle cx="80" cy="80" r="70" stroke-width="3"/>
+    <!-- 8 spokes (representing the 8 spine files) -->
+    <line x1="80" y1="80" x2="80" y2="22"   stroke-width="2"/>
+    <line x1="80" y1="80" x2="80" y2="138"  stroke-width="2"/>
+    <line x1="80" y1="80" x2="22" y2="80"   stroke-width="2"/>
+    <line x1="80" y1="80" x2="138" y2="80"  stroke-width="2"/>
+    <line x1="80" y1="80" x2="39" y2="39"   stroke-width="2"/>
+    <line x1="80" y1="80" x2="121" y2="39"  stroke-width="2"/>
+    <line x1="80" y1="80" x2="39" y2="121"  stroke-width="2"/>
+    <line x1="80" y1="80" x2="121" y2="121" stroke-width="2"/>
+  </g>
+  <!-- Spoke endpoints: the spine docs themselves -->
+  <g fill="#7c3aed">
+    <circle cx="80" cy="22"  r="4"/>
+    <circle cx="80" cy="138" r="4"/>
+    <circle cx="22" cy="80"  r="4"/>
+    <circle cx="138" cy="80" r="4"/>
+    <circle cx="39" cy="39"  r="4"/>
+    <circle cx="121" cy="39" r="4"/>
+    <circle cx="39" cy="121" r="4"/>
+    <circle cx="121" cy="121" r="4"/>
+  </g>
+  <!-- Anchor: ARCHITECTURE.md, the hub everything points back to -->
+  <circle cx="80" cy="80" r="11" fill="#7c3aed"/>
+  <circle cx="80" cy="80" r="5"  fill="#ffffff"/>
+</svg>

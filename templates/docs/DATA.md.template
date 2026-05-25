@@ -1,0 +1,28 @@
+---
+owner: generator
+edit_authority: [generator, human]
+merge_policy: auto
+source: scripts/llm-docs/gen-data.sh
+updated: {{TIMESTAMP}}
+hash: pending
+generated_hash: pending
+---
+
+<!-- AUTO-GENERATED — edit will be overwritten on next sync. See: scripts/llm-docs/gen-data.sh -->
+
+# Data Model
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Schema summary, entity relationships, and key access patterns.
+> **Source of truth:** schema file(s) in the repo (Prisma, SQLAlchemy, migrations, etc.).
+
+_Populated by `scripts/llm-docs/gen-data.sh`. If this repo has no database, the generator will emit a placeholder noting that._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [API.md](./API.md) — endpoints that read/write this data
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — access control
+- [DECISIONS.md](./DECISIONS.md) — schema decisions

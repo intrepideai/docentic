@@ -1,0 +1,53 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: review
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# Operations
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Deploy, environment, observability, runbook, and performance reference.
+
+## Deploy
+
+_TODO: how this gets to production, build commands, deploy targets, CI/CD pipeline._
+
+## Environment variables
+
+_TODO: required env vars, where they come from (Vercel env, AWS Secrets Manager, etc.), .env.example reference._
+
+## Secrets management
+
+_TODO: how secrets are managed across environments._
+
+## Observability
+
+_TODO: logging, error tracking, metrics, dashboards._
+
+## Runbook
+
+_TODO: common operations (deploy rollback, cache invalidation, DB reset, etc.) and common failure modes._
+
+## Performance budgets
+
+_TODO: SLOs, hot paths to watch, performance targets._
+
+## CI
+
+_TODO: cross-reference existing `.github/workflows/` or equivalent._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [INTEGRATIONS.md](./INTEGRATIONS.md) — third-party services list
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — secret handling, sensitive data
+- [DECISIONS.md](./DECISIONS.md) — operational ADRs
+
+---
+
+**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will fill in the TODOs above based on existing SETUP / DEPLOY docs and inspection of the repo.**

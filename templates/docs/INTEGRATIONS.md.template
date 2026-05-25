@@ -1,0 +1,28 @@
+---
+owner: generator
+edit_authority: [generator, human]
+merge_policy: auto
+source: scripts/llm-docs/gen-integrations.sh
+updated: {{TIMESTAMP}}
+hash: pending
+generated_hash: pending
+---
+
+<!-- AUTO-GENERATED — edit will be overwritten on next sync. See: scripts/llm-docs/gen-integrations.sh -->
+
+# Integrations
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Third-party services and SDKs in use, plus feature flag inventory.
+> **Source of truth:** package manifests + env vars referenced in source.
+
+_Populated by `scripts/llm-docs/gen-integrations.sh` on first maintenance run._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [OPS.md](./OPS.md) — env var configuration & secrets
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — secret handling
+- [DECISIONS.md](./DECISIONS.md) — integration choices

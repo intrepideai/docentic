@@ -1,0 +1,52 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: auto_delayed:24h
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# Glossary
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Domain vocabulary. When in doubt about what a term means in this codebase, look here.
+
+## Product terms
+
+_TODO: domain-specific terms unique to this repo's product._
+
+## Technical terms
+
+_TODO: technical terms that have specific meaning here._
+
+## Template terms (universal — keep)
+
+| Term | Meaning |
+|---|---|
+| **Spine** | The 13 standard documentation files in `docs/` (LLM-friendly template). |
+| **Generated** | A doc file rebuilt deterministically from source. Has a sentinel `<!-- AUTO-GENERATED -->` comment. |
+| **Manual** | A doc file maintained by humans. May receive AI-proposed PRs. |
+| **AI** | A doc file (typically only `HISTORY.md`) updated by AI agent passes. |
+| **Critical file** | A doc file that always requires human review on changes — never auto-merges. AGENTS.md, ARCHITECTURE.md, OPS.md, SECURITY-NOTES.md, DECISIONS.md (and INFRA.md if present). |
+| **Tombstone** | A `<!-- REMOVED ... -->` comment left in a doc file after a section is deleted, preserved for 30 days then swept to `.agents/REMOVALS.md`. |
+| **Hash conflict** | When a generated file's current content hash doesn't match what the generator last produced, meaning a human edited it. Triggers a conflict PR. |
+| **NO_UPDATE_NEEDED** | The sentinel string an AI step emits when nothing material changed, preventing spurious updates. |
+
+## Acronyms
+
+| Acronym | Expansion |
+|---|---|
+| ADR | Architecture Decision Record (see [DECISIONS.md](./DECISIONS.md)) |
+| LLM | Large Language Model |
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [DATA.md](./DATA.md) — formal entity definitions
+- [DECISIONS.md](./DECISIONS.md) — why these terms exist
+
+---
+
+**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will add product-specific terms based on repo analysis.**

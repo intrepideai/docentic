@@ -1,0 +1,20 @@
+name: example — docent check
+# Reference workflow showing how downstream repos use the docent action.
+# This file is NOT executed by this repo (the trigger paths don't match anything here);
+# it serves as a copy-paste example for users who scaffold docent.
+
+on:
+  # Trigger only when this file itself is edited — keeps the example off the
+  # main CI critical path but lets us verify it parses.
+  push:
+    paths:
+      - '.github/workflows/example-docent-check.yml'
+
+jobs:
+  docent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          warnings-as-errors: 'false'

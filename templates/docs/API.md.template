@@ -1,0 +1,28 @@
+---
+owner: generator
+edit_authority: [generator, human]
+merge_policy: auto
+source: scripts/llm-docs/gen-api.sh
+updated: {{TIMESTAMP}}
+hash: pending
+generated_hash: pending
+---
+
+<!-- AUTO-GENERATED — edit will be overwritten on next sync. See: scripts/llm-docs/gen-api.sh -->
+
+# API Surface
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Inventory of endpoints exposed by this repo.
+> **Source of truth:** route handlers or API spec in the codebase.
+
+_Populated by `scripts/llm-docs/gen-api.sh`. If this repo has no API, the generator will emit a placeholder noting that._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [DATA.md](./DATA.md) — entities these endpoints read/write
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — auth and authorization model
+- [CONVENTIONS.md](./CONVENTIONS.md) — handler patterns

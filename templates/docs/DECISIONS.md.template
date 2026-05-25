@@ -1,0 +1,74 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: review
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# Architecture Decision Records (ADRs)
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Significant architectural decisions, why we made them, and what we considered.
+> **Format:** Lightweight ADRs — context, decision, consequences.
+
+## Index
+
+| # | Title | Status | Date |
+|---|---|---|---|
+| 0001 | Adopt the standardized LLM-friendly docs template | Accepted | {{DATE}} |
+
+---
+
+## ADR 0001 — Adopt the standardized LLM-friendly docs template
+
+**Status:** Accepted ({{DATE}})
+
+### Context
+
+Intrepide maintains many repos. Each historically had ad-hoc documentation that didn't follow a consistent shape. This made onboarding slow for both humans and AI agents — no predictable "where do I look for X" pattern across the fleet.
+
+### Decision
+
+Adopt the standardized LLM-friendly docs template (see `~/Desktop/Intrepide/LLM-DOCS-TEMPLATE-SPEC.md`):
+
+- Root `AGENTS.md` as the universal entry point
+- `docs/` spine: ARCHITECTURE, STACK, DATA, API, MAP, OPS, CONVENTIONS, GLOSSARY, INTEGRATIONS, SECURITY-NOTES, DECISIONS, HISTORY
+- Auto-detected adds: UI.md, INFRA.md, ML.md, MOBILE.md
+- `.agents/index.json` machine-readable inventory
+- `research/` directory with scout pipeline + librarian
+- **Orchestration model: external agent invocation.** An orchestrator managed outside this repo points an agent at `scripts/llm-docs/MAINTAIN.md` with a sophisticated prompt. The agent executes the 8-step pass, commits, and opens a PR.
+
+### Consequences
+
+**Positive:**
+- Consistent navigation across all Intrepide repos
+- Single skill (`maintain-repo`) invokable from any repo
+- Compound research library
+- Predictable LLM context
+
+**Negative:**
+- Initial scaffolding overhead per repo (automated by `@intrepideai/docent`)
+- Existing docs (CONTRIBUTING, DEVELOPERS, SETUP, etc.) coexist with the new spine
+- Discipline required to keep critical files up to date
+
+---
+
+## Adding a new ADR
+
+1. Add a row to the Index table above
+2. Use numbered headings (`## ADR NNNN — …`)
+3. Use sections: Context · Decision · Alternatives considered (optional) · Consequences · Follow-ups
+4. Update related files (CONVENTIONS.md, ARCHITECTURE.md) if the decision changes them
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [HISTORY.md](./HISTORY.md) — what shipped recently
+- Existing CONTRIBUTING.md at repo root if present
+
+---
+
+**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will add ADRs covering this repo's significant architectural choices.**

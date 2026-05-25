@@ -1,0 +1,40 @@
+---
+owner: ai
+edit_authority: [ai, human]
+merge_policy: auto_delayed:4h
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# History
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Curated narrative of what changed and why. Not a git log dump — git already has that. This is the human-readable layer on top.
+> **Maintenance:** AI-maintained. Append-only, max 3 bullets per day. Items older than 30 days are either promoted to [DECISIONS.md](./DECISIONS.md) or deleted (git preserves the raw record).
+
+---
+
+## Initial state — {{DATE}}
+
+LLM-friendly docs template scaffolded by `@intrepideai/docent`. The HISTORY Writer agent (Prompt 6) will append new entries on its daily run.
+
+---
+
+## Format guide for future entries
+
+```markdown
+## YYYY-MM-DD
+
+- **Subject line** — One bullet on the change, focused on the *why* and *impact*, not the *what*.
+  Reference commits with their SHAs and PR numbers. Reference issues/decisions with links.
+- Max 3 bullets per day. If more changes shipped, group by theme.
+```
+
+Older entries get summarized into multi-day blocks once they're past 7 days. Items that become DECISIONS get promoted there and removed here.
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [DECISIONS.md](./DECISIONS.md) — durable architectural calls (the long-term record)

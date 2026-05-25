@@ -1,0 +1,55 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: auto_delayed:24h
+updated: {{TIMESTAMP}}
+hash: pending
+auto_detected: mobile
+trigger: mobile framework detected (React Native / Flutter / iOS / Android)
+---
+
+# Mobile
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Platform-specific quirks, native dependencies, release flow.
+
+## Platforms
+
+_TODO: iOS / Android / both, minimum OS versions._
+
+## Framework
+
+_TODO: React Native / Flutter / native / Expo. Version, key configuration._
+
+## Native dependencies
+
+_TODO: native modules, why each is needed, link/unlink patterns._
+
+## Build & release
+
+_TODO: how builds are produced, how releases hit App Store / Play Store / TestFlight._
+
+## Platform-specific code
+
+_TODO: when platform-specific code is needed, how it's organized (Platform.select, .ios/.android files, etc.)._
+
+## Push notifications
+
+_TODO: provider, setup, testing._
+
+## Deep linking
+
+_TODO: scheme, universal links, app links._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [INTEGRATIONS.md](./INTEGRATIONS.md) — third-party SDKs
+- [OPS.md](./OPS.md) — deploy + crash reporting
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — key handling on device
+
+---
+
+**Scaffolded by `@intrepideai/docent` (auto-detected: mobile). The Bootstrap agent will fill in the TODOs.**

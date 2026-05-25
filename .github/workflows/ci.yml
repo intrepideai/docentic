@@ -1,0 +1,103 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck + build
+        run: npm run build
+
+      - name: Smoke test — dry run against a fresh repo
+        run: |
+          TESTDIR=$(mktemp -d)
+          cd "$TESTDIR"
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "CI"
+          echo '{"name":"smoke","dependencies":{"next":"^15","react":"^18","@prisma/client":"^6"}}' > package.json
+          echo '{"compilerOptions":{}}' > tsconfig.json
+          mkdir prisma && echo 'datasource db {provider="mysql"}' > prisma/schema.prisma
+          git add -A && git commit -q -m "init"
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$TESTDIR" --dry-run
+
+      - name: Smoke test — actual scaffold
+        run: |
+          TESTDIR=$(mktemp -d)
+          cd "$TESTDIR"
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "CI"
+          echo '{"name":"smoke"}' > package.json
+          git add -A && git commit -q -m "init"
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$TESTDIR" --no-pr
+          # Sanity check the output
+          test -f AGENTS.md
+          test -f docs/ARCHITECTURE.md
+          test -f .agents/index.json
+          test -f scripts/llm-docs/MAINTAIN.md
+          test -x scripts/llm-docs/gen-stack.sh
+          # Verify JSON is valid
+          jq -e . .agents/index.json > /dev/null
+          jq -e . research/index.json > /dev/null
+          # Verify it committed on the expected branch
+          test "$(git rev-parse --abbrev-ref HEAD)" = "docent/template-scaffold"
+
+          # Smoke test 3: docent check passes against the scaffold
+          node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR"
+
+          # Smoke test 4: docent check exits non-zero when index.json is corrupt
+          echo '{ broken' > "$TESTDIR/.agents/index.json"
+          if node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR" > /dev/null 2>&1; then
+            echo "✗ docent check should have failed on corrupt JSON"
+            exit 1
+          fi
+
+          # Smoke test 5: --json mode produces valid JSON
+          # Restore a minimal valid index first
+          echo '{"version":1,"repo":"x","docs":[]}' > "$TESTDIR/.agents/index.json"
+          node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR" --json | jq -e . > /dev/null
+
+          # Smoke test 6: docent install --dry-run reports correct paths for both targets
+          node "$GITHUB_WORKSPACE/dist/cli.js" install --claude --cursor --dry-run --force | grep -q "would install"
+
+          # Smoke test 7: docent install --cursor --project writes a real file
+          INSTALL_TARGET=$(mktemp -d)
+          node "$GITHUB_WORKSPACE/dist/cli.js" install --cursor --project "$INSTALL_TARGET" --force
+          test -f "$INSTALL_TARGET/.cursor/rules/docent.mdc"
+
+          # Smoke test 8: docent populate --dry-run works without an API key
+          # (Restore the index that smoke test 5 mutated so populate sees a valid scaffold.)
+          cd "$TESTDIR"
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$TESTDIR" --no-commit --force > /dev/null
+          node "$GITHUB_WORKSPACE/dist/cli.js" populate "$TESTDIR" --dry-run | grep -q "Dry run"
+
+          # Smoke test 9: action.yml is valid YAML
+          npx -y -p js-yaml@4 js-yaml "$GITHUB_WORKSPACE/action.yml" > /dev/null
+
+          # Smoke test 10: fresh install from a sibling project produces a working binary
+          # This catches the bug we hit where `npx github:intrepideai/docent` fetched the
+          # repo but never ran the build, so dist/cli.js didn't exist. The `prepare`
+          # script in package.json should fix that — verify here.
+          SIBLING=$(mktemp -d)
+          cd "$SIBLING"
+          npm init -y > /dev/null
+          npm install --silent "$GITHUB_WORKSPACE"
+          test -x node_modules/.bin/docent || (echo "✗ binary missing after install"; exit 1)
+          node_modules/.bin/docent --version | grep -q '^0\.'
+
+          echo "✓ smoke tests passed"

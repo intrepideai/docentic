@@ -1,0 +1,51 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: review
+updated: {{TIMESTAMP}}
+hash: pending
+auto_detected: infra
+trigger: IaC files detected (terraform / pulumi / cdk)
+---
+
+# Infrastructure
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Infrastructure-as-code resources, environments, and topology.
+
+## Tool
+
+_TODO: Terraform / Pulumi / CDK / CloudFormation, version, state backend._
+
+## Environments
+
+_TODO: dev / staging / prod (or whatever you use), how they're configured._
+
+## Resource inventory
+
+_TODO: VPCs, databases, queues, storage buckets, etc., grouped by environment._
+
+## Topology
+
+_TODO: how resources relate. Diagram if useful._
+
+## Provisioning workflow
+
+_TODO: plan → review → apply, who can apply, approval gates._
+
+## Drift detection
+
+_TODO: how drift is detected and reconciled._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [OPS.md](./OPS.md) — deploy + runbook
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — secrets, IAM
+- [DECISIONS.md](./DECISIONS.md) — infra decisions
+
+---
+
+**Scaffolded by `@intrepideai/docent` (auto-detected: IaC). The Bootstrap agent will fill in the TODOs.**

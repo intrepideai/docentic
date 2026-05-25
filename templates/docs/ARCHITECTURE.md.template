@@ -1,0 +1,69 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: review
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# Architecture
+
+> **Anchor role:** This file is the system anchor for this repo. Every other doc file links back here. If an agent ever loses context, this is the page that reorients them.
+> **Navigation:** [← AGENTS.md (root index)](../AGENTS.md)
+
+## 1. Goals & Context
+
+_TODO: filled in by the Bootstrap agent. What is this repo for? Who uses it? What's the lineage?_
+
+## 2. Constraints
+
+_TODO: what must this system honor? Compatibility, perf, deploy targets, etc._
+
+## 3. Building Blocks
+
+_TODO: high-level component map. Cross-reference [MAP.md](./MAP.md) for the file-tree view._
+
+## 4. Runtime View
+
+_TODO: how requests flow, key sequences, background work, jobs, events._
+
+## 5. Deployment View
+
+_TODO: how this gets to production. Cross-reference [OPS.md](./OPS.md)._
+
+## 6. Crosscutting Concerns
+
+_TODO: auth, logging, error tracking, caching, telemetry, etc._
+
+## 7. Decisions
+
+See [DECISIONS.md](./DECISIONS.md) for ADRs.
+
+## 8. Quality
+
+_TODO: testing, type-checking, linting, CI. Cross-reference [CONVENTIONS.md](./CONVENTIONS.md)._
+
+## 9. Risks & Technical Debt
+
+_TODO: known issues and migration debt._
+
+## 10. Glossary
+
+See [GLOSSARY.md](./GLOSSARY.md).
+
+---
+
+## See also
+
+- [AGENTS.md](../AGENTS.md) — root index
+- [STACK.md](./STACK.md) — tech, services, versions
+- [DATA.md](./DATA.md) — full schema reference
+- [API.md](./API.md) — endpoint inventory
+- [MAP.md](./MAP.md) — annotated directory tree
+- [DECISIONS.md](./DECISIONS.md) — full ADR record
+- [OPS.md](./OPS.md) — deployment, env vars, observability
+- [SECURITY-NOTES.md](./SECURITY-NOTES.md) — threat model, sensitive data
+
+---
+
+**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will fill in the 10 arc42 sections above based on reading the codebase.**

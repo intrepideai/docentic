@@ -1,0 +1,111 @@
+# research/config.yml
+#
+# The ONLY per-repo file in the research pipeline.
+# Everything else (scouts, researcher, librarian) is identical across the fleet.
+#
+# This is the SCAFFOLDED SKELETON. Run the Config Seeder agent (Prompt 2 from
+# ~/Desktop/Intrepide/ORCHESTRATOR-PROMPTS.md) to propose tailored topics, keywords,
+# and sources based on this repo's ARCHITECTURE.md and STACK.md. The seeder will
+# write its proposal to `research/config.proposed.yml` for human review.
+
+# What this repo cares about. Topics become folders under research/topics/.
+topics: []
+# Example seeded topics:
+#   - documentation-platforms
+#   - prisma-mysql
+#   - feature-flags-systems
+
+# Free-text terms scouts use for searches.
+keywords: []
+# Example:
+#   - "Next.js 15"
+#   - "App Router"
+#   - "documentation platform"
+
+# Source-specific allowlists / signal sources.
+sources:
+  x_handles: []
+  github_topics: []
+  arxiv_categories: []   # leave empty for non-ML repos
+  web_domains: []        # MUST be allowlisted — no random sites
+  hf_interests: []       # leave empty for non-ML repos
+  reddit_subs: []
+  rss_feeds: []
+  lobsters_tags: []
+  youtube_channels: []
+
+# Exclude patterns — anything matching these is dropped at scout time.
+exclusions:
+  - "tutorial"
+  - "course"
+  - "udemy"
+  - "free trial"
+  - "complete guide"
+  - "in 2024"
+  - "in 2025"
+
+# Advisory cadence for the EXTERNAL agent orchestrator (not CI cron).
+# The orchestrator reads this as a hint for when to point an agent at
+# scripts/llm-docs/MAINTAIN.md. Format is cron-style for convenience.
+cadence:
+  scouts:
+    x: daily
+    github: daily
+    arxiv: daily
+    web: daily
+    hf: daily            # auto-skipped for non-ML stacks
+    reddit: daily
+    hn: daily
+    rss: daily
+    lobsters: daily
+    youtube: weekly
+  researcher: 6h
+  librarian: 24h
+
+# Per-source filters.
+filters:
+  github:
+    min_stars: 50
+    max_age_days_unknown: 30
+    skip_forks: true
+    skip_archived: true
+  web:
+    require_allowlisted_domain: true
+  reddit:
+    min_upvotes: 25
+  hn:
+    min_score: 50
+    min_comments: 10
+  lobsters:
+    min_score: 15
+
+# Hard caps per pipeline run.
+caps:
+  per_scout_per_run: 3
+  researcher_per_run: 20
+
+# Priority scoring weights for the researcher.
+priority_weights:
+  source_quality:
+    arxiv: 0.9
+    github: 0.8
+    rss: 0.85
+    lobsters: 0.8
+    hn: 0.7
+    hf: 0.7
+    x: 0.6
+    reddit: 0.55
+    web: 0.4
+    youtube: 0.5
+  recency_half_life_days: 14
+
+# Auto-archive policies for the librarian.
+auto_archive:
+  low_relevance_days: 30
+  any_relevance_days: 90
+  actioned_days: 180
+
+# Schedule hint for the external orchestrator.
+schedule:
+  default_run: "0 6 * * *"   # 6 AM daily (advisory)
+  extra_runs: []

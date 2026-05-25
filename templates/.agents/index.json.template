@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/intrepideai/docent/main/schemas/agents-index.schema.json",
+  "version": 1,
+  "repo": "{{REPO_NAME}}",
+  "product_name": "{{REPO_NAME}}",
+  "stack": {{STACK_ARRAY}},
+  "template_version": "0.1.0",
+  "updated": "{{TIMESTAMP}}",
+  "docs": {{DOCS_ARRAY}},
+  "sub_agents": [],
+  "research": {
+    "config": "research/config.yml",
+    "topics": [],
+    "library_size": 0,
+    "last_research_pass": null,
+    "status": "scaffolded"
+  },
+  "seen_urls": [],
+  "orchestration": {
+    "model": "external_agent_invocation",
+    "entry_point": "scripts/llm-docs/MAINTAIN.md",
+    "claude_skill_wrapper": ".claude/skills/maintain-repo/SKILL.md",
+    "ci_workflow": null,
+    "note": "No CI cron runs the AI steps. An external orchestrator points an agent at the entry point; the agent executes the 8-step pass, commits, and opens a PR."
+  },
+  "health": {
+    "stale_files": [],
+    "validation_errors": [],
+    "conflicts": [],
+    "notes": [
+      "Initial scaffold — generator hashes are 'pending' until first maintenance run",
+      "Hash values across all docs will be backfilled by validate.sh on first run",
+      "Run Bootstrap agent (Prompt 1) to populate AGENTS.md + docs/* content",
+      "Run Config Seeder agent (Prompt 2) to propose research/config.yml topics"
+    ]
+  }
+}

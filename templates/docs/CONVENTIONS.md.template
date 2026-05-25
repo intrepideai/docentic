@@ -1,0 +1,61 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: auto_delayed:24h
+updated: {{TIMESTAMP}}
+hash: pending
+---
+
+# Conventions
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Code patterns, naming, testing rules. What "the right way to do X here" looks like.
+
+## Language
+
+_TODO: language version, type checking strictness, key idioms._
+
+## File layout patterns
+
+_TODO: how files are organized within the codebase._
+
+## Naming
+
+_TODO: file naming, component naming, constant naming, type/interface naming._
+
+## API / handler patterns
+
+_TODO: if applicable, the canonical pattern for new handlers._
+
+## Imports
+
+_TODO: import aliases, allowed/disallowed import patterns._
+
+## Test strategy
+
+_TODO: unit / integration / smoke / E2E layers, tools, common test commands._
+
+## Linting
+
+_TODO: linters in use, pre-commit hooks (or note their absence)._
+
+## Commits
+
+_TODO: commit message convention._
+
+## What NOT to do
+
+_TODO: anti-patterns specific to this codebase (legacy code to avoid, deprecated APIs, etc.)._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [API.md](./API.md) — endpoint patterns
+- [DECISIONS.md](./DECISIONS.md) — why these patterns
+- Existing CONTRIBUTING.md / DEVELOPERS.md at repo root if present
+
+---
+
+**Scaffolded by `@intrepideai/docent`. The Bootstrap agent will fill in the TODOs based on existing CONTRIBUTING / DEVELOPERS docs and code inspection.**

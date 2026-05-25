@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/intrepideai/docent/main/schemas/agents-index.schema.json",
+  "title": ".agents/index.json",
+  "description": "Machine-readable inventory of an agent-friendly repo scaffolded by docent. Lives at .agents/index.json. Any tool that needs to know what docs are present, their tier, their merge policy, and what state the research pipeline is in can read this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "repo", "docs"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of this schema. Enables IDE autocomplete and validation."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Bumped on breaking changes."
+    },
+    "repo": {
+      "type": "string",
+      "description": "Repo identifier — typically `<owner>/<name>`.",
+      "examples": ["intrepideai/docent"]
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Human-facing product name. Often the same as repo's short name."
+    },
+    "stack": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Detected technology labels (language, framework, database, package manager, etc.). Free-form strings.",
+      "examples": [["typescript", "nextjs", "tailwind", "prisma", "pnpm"]]
+    },
+    "template_version": {
+      "type": "string",
+      "description": "Version of the docent template that scaffolded this repo (semver).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[\\w.-]+)?$"
+    },
+    "updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of the last update to this index."
+    },
+    "docs": {
+      "type": "array",
+      "description": "Inventory of spine + auto-detected doc files.",
+      "items": { "$ref": "#/$defs/DocEntry" }
+    },
+    "sub_agents": {
+      "type": "array",
+      "description": "Nested AGENTS.md files in subdirectories (per-area scopes).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "scope": { "type": "string", "description": "What area this sub-AGENTS covers (e.g. 'frontend', 'api', 'worker')." }
+        }
+      }
+    },
+    "research": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Research-pipeline state. Optional — present if the repo uses the research/ folder.",
+      "properties": {
+        "config": { "type": "string", "description": "Path to research/config.yml" },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "library_size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of research files under research/topics/"
+        },
+        "last_research_pass": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["scaffolded", "active", "stalled", "not_yet_scaffolded"]
+        }
+      }
+    },
+    "seen_urls": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hashes of URLs the research scouts have already seen — for dedup across runs."
+    },
+    "orchestration": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How the maintain-repo skill is invoked.",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": ["external_agent_invocation", "ci_cron", "manual_only", "hybrid"],
+          "description": "Who orchestrates daily maintenance."
+        },
+        "entry_point": {
+          "type": "string",
+          "description": "Relative path to the entry-point skill file."
+        },
+        "claude_skill_wrapper": {
+          "type": ["string", "null"],
+          "description": "Path to the Claude Code skill wrapper if used."
+        },
+        "ci_workflow": {
+          "type": ["string", "null"],
+          "description": "Path to a CI workflow if the AI steps run in CI."
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Self-reported health from the last validator run.",
+      "properties": {
+        "stale_files": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "validation_errors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "conflicts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "DocEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "owner", "edit_authority", "merge_policy"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path relative to repo root."
+        },
+        "owner": {
+          "type": "string",
+          "enum": ["human", "generator", "ai"],
+          "description": "Primary write authority."
+        },
+        "edit_authority": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["human", "generator", "ai"] },
+          "minItems": 1,
+          "description": "Who is allowed to open a PR that modifies this file."
+        },
+        "merge_policy": {
+          "type": "string",
+          "pattern": "^(auto|review|auto_delayed:\\d+[hd])$",
+          "description": "Merge gate. `auto` = auto-merge if CI passes. `review` = always requires human approval. `auto_delayed:Nh` or `auto_delayed:Nd` = auto-merge after N hours/days with no objection.",
+          "examples": ["auto", "review", "auto_delayed:24h", "auto_delayed:4h", "auto_delayed:7d"]
+        },
+        "source": {
+          "type": "string",
+          "description": "For generated files: path to the script that produces this file."
+        },
+        "critical": {
+          "type": "boolean",
+          "description": "If true, this file is critical — never auto-merges regardless of merge_policy."
+        },
+        "anchor": {
+          "type": "boolean",
+          "description": "True for the system anchor (typically docs/ARCHITECTURE.md)."
+        },
+        "size_limit_lines": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Soft size limit; validators warn when exceeded."
+        },
+        "auto_detected": {
+          "type": "boolean",
+          "description": "True if this file was added because the stack matched a trigger (e.g. UI.md for frontend repos)."
+        },
+        "trigger": {
+          "type": "string",
+          "description": "If auto_detected, the rule that triggered inclusion."
+        },
+        "hash": {
+          "type": "string",
+          "description": "sha256 of the file's current content, or 'pending' before first sync."
+        },
+        "generated_hash": {
+          "type": "string",
+          "description": "For generated files: sha256 of what the generator last produced. Hash drift between hash and generated_hash signals a human edit."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "owner": { "const": "generator" } } },
+          "then": {
+            "required": ["source"],
+            "properties": {
+              "generated_hash": { "type": "string" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

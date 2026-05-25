@@ -1,0 +1,51 @@
+---
+owner: human
+edit_authority: [human, ai]
+merge_policy: auto_delayed:24h
+updated: {{TIMESTAMP}}
+hash: pending
+auto_detected: ml
+trigger: ML framework detected (torch / tensorflow / sklearn / transformers)
+---
+
+# Machine Learning
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Models, datasets, training pipelines, and evaluation.
+
+## Models
+
+_TODO: inventory of models used or trained. Sources, sizes, capabilities._
+
+## Datasets
+
+_TODO: training/eval datasets, where stored, schema, versioning._
+
+## Training pipeline
+
+_TODO: how models are trained or fine-tuned. Compute, schedule, costs._
+
+## Evaluation
+
+_TODO: eval metrics, benchmarks, regression detection._
+
+## Deployment
+
+_TODO: how models are served (in-process, dedicated inference server, third-party API)._
+
+## Experiments
+
+_TODO: experiment tracking tool (W&B, MLflow, etc.) and conventions._
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [DATA.md](./DATA.md) — data sources
+- [INTEGRATIONS.md](./INTEGRATIONS.md) — ML services (OpenAI, Anthropic, etc.)
+- [OPS.md](./OPS.md) — model deployment
+
+---
+
+**Scaffolded by `@intrepideai/docent` (auto-detected: ML). The Bootstrap agent will fill in the TODOs.**

@@ -1,0 +1,66 @@
+name: 'docent'
+description: 'Validate that a repo follows the docent agent-friendly template — runs `docent check` against your codebase.'
+author: 'Intrepide'
+
+branding:
+  icon: 'book-open'
+  color: 'purple'
+
+inputs:
+  path:
+    description: 'Path to the repo to check (default: ${{ github.workspace }})'
+    required: false
+    default: '.'
+  warnings-as-errors:
+    description: 'Fail the action on warnings, not just errors'
+    required: false
+    default: 'false'
+  json:
+    description: 'Emit JSON instead of human-readable output (useful for piping)'
+    required: false
+    default: 'false'
+  node-version:
+    description: 'Node.js version to install (>= 22)'
+    required: false
+    default: '22'
+  version:
+    description: 'docent version to run (npm spec — defaults to the GitHub main branch)'
+    required: false
+    default: 'github:intrepideai/docent'
+
+outputs:
+  ok:
+    description: '"true" if the check passed cleanly, "false" otherwise'
+    value: ${{ steps.docent-check.outputs.ok }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Run docent check
+      id: docent-check
+      shell: bash
+      run: |
+        ARGS=()
+        if [ "${{ inputs.warnings-as-errors }}" = "true" ]; then
+          ARGS+=("--warnings-as-errors")
+        fi
+        if [ "${{ inputs.json }}" = "true" ]; then
+          ARGS+=("--json")
+        fi
+
+        set +e
+        npx -y "${{ inputs.version }}" check "${{ inputs.path }}" "${ARGS[@]}"
+        code=$?
+        set -e
+
+        if [ $code -eq 0 ]; then
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+          exit $code
+        fi

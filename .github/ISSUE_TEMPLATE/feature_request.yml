@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new capability or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening, please check that the idea fits docent's scope (see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)). We aim to stay boring, deterministic, fast, and dependency-light.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the real-world pain point or use case, not the implementation.
+      placeholder: |
+        When I run docent against a Rust repo, the stack detection misses ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should docent do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways to solve the problem, and why they're worse.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Where does this change live?
+      options:
+        - CLI flags / ergonomics
+        - Stack detection
+        - Template files (under templates/)
+        - Prompts (under prompts/)
+        - Generators / validators
+        - Documentation / README
+        - Other
+    validations:
+      required: true

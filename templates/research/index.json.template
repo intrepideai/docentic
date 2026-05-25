@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "repo": "{{REPO_NAME}}",
+  "config": "research/config.yml",
+  "topics": [],
+  "library_size": 0,
+  "last_research_pass": null,
+  "last_scout_runs": {
+    "x": null,
+    "github": null,
+    "arxiv": null,
+    "web": null,
+    "hf": null,
+    "reddit": null,
+    "hn": null,
+    "rss": null,
+    "lobsters": null,
+    "youtube": null
+  },
+  "items": [],
+  "seen_urls": [],
+  "stats": {
+    "by_topic": {},
+    "by_source": {},
+    "by_relevance": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "archived": 0
+  },
+  "health": {
+    "stale_scouts": [],
+    "missing_topics_in_filesystem": [],
+    "uncategorized_files": 0,
+    "notes": [
+      "Library is empty — first pass will populate it.",
+      "All last_scout_runs are null; orchestrator will run all scouts on first invocation.",
+      "Topics will populate from config.yml after Config Seeder runs."
+    ]
+  }
+}

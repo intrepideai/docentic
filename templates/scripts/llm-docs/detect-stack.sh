@@ -94,8 +94,12 @@ if [ "$IS_MONOREPO" = "true" ]; then
   SRC_DIRS="$APP_ROOT/src $APP_ROOT/app packages"
 else
   SRC_DIRS=""
-  for d in server client src app; do
+  for d in server client src app shared; do
     [ -d "$d" ] && SRC_DIRS="$SRC_DIRS $d"
   done
   SRC_DIRS="${SRC_DIRS# }"
 fi
+
+# Normalize: strip leading ./ that find produces when searching from "."
+API_DIR="${API_DIR#./}"
+SCHEMA_FILE="${SCHEMA_FILE#./}"

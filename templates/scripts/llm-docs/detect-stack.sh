@@ -22,7 +22,7 @@ if [ -d "apps" ] && [ -f "pnpm-workspace.yaml" ]; then
     [ -d "$candidate" ] && { APP_ROOT="$candidate"; break; }
   done
   if [ -z "$APP_ROOT" ]; then
-    APP_ROOT=$(find apps -mindepth 1 -maxdepth 1 -type d | sort | head -1)
+    APP_ROOT=$(find apps -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | head -1 || true)
   fi
   APP_PKG="$APP_ROOT/package.json"
 else
@@ -49,7 +49,7 @@ _detect_has_dep() {
 if find . -name 'schema.prisma' -not -path '*/node_modules/*' 2>/dev/null | grep -q .; then
   ORM="prisma"
   SCHEMA_TYPE="prisma"
-  SCHEMA_FILE=$(find . -name 'schema.prisma' -not -path '*/node_modules/*' | head -1)
+  SCHEMA_FILE=$(find . -name 'schema.prisma' -not -path '*/node_modules/*' 2>/dev/null | head -1 || true)
 elif _detect_has_dep "drizzle-orm"; then
   ORM="drizzle"
   SCHEMA_TYPE="drizzle"
@@ -72,12 +72,11 @@ if _detect_has_dep "next"; then
   done
 elif _detect_has_dep "fastify"; then
   STACK_TYPE="fastify"
-  API_DIR=$(find . -type d -name "routes" -not -path '*/node_modules/*' 2>/dev/null | head -1)
+  API_DIR=$(find . -type d -name "routes" -not -path '*/node_modules/*' 2>/dev/null | head -1 || true)
 elif _detect_has_dep "hono"; then
   STACK_TYPE="hono"
   # Best-effort: find the file that instantiates Hono and use its directory
-  _hono_entry=$(find . -type f \( -name "*.ts" -o -name "*.tsx" \) -not -path '*/node_modules/*' 2>/dev/null \
-    | xargs grep -l "new Hono" 2>/dev/null | head -1)
+  _hono_entry=$(grep -rl "new Hono" . --include='*.ts' --include='*.tsx' --exclude-dir=node_modules 2>/dev/null | head -1 || true)
   [ -n "${_hono_entry:-}" ] && API_DIR=$(dirname "$_hono_entry")
   unset _hono_entry
 elif _detect_has_dep "express"; then

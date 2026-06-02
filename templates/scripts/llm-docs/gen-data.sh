@@ -19,9 +19,8 @@ NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # Drizzle helpers (best-effort — works for standard pgTable / mysqlTable calls)
 extract_drizzle_tables() {
   local schema="$1"
-  grep -oE '(pgTable|mysqlTable|sqliteTable)\("[^"]+"\s*,' "$schema" 2>/dev/null \
-    | sed 's/(pgTable|mysqlTable|sqliteTable)("//;s/(pg\|mysql\|sqlite)Table("//;s/"\s*,//' \
-    | sed -E 's/(pgTable|mysqlTable|sqliteTable)\("//;s/"\s*,//' \
+  grep -oE '(pgTable|mysqlTable|sqliteTable)\("[^"]+"' "$schema" 2>/dev/null \
+    | sed -E 's/.*\("//; s/"$//' \
     | sort -u
 }
 
@@ -91,7 +90,7 @@ elif [ "$SCHEMA_TYPE" = "drizzle" ] && [ -n "$SCHEMA_FILE" ]; then
 |---|---|
 EOF
 
-  tables=$(extract_drizzle_tables "$SCHEMA_FILE")
+  tables=$(extract_drizzle_tables "$SCHEMA_FILE" || true)
   if [ -n "$tables" ]; then
     while IFS= read -r table; do
       [ -z "$table" ] && continue

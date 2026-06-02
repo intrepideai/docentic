@@ -418,6 +418,87 @@ assert_contains     "6e GET uppercased (no U prefix)"    "$OUT" '`GET`'
 assert_not_contains "6e no Uget artifact"                "$OUT" '`Uget`'
 cleanup "$DIR"
 
+# Express: exit 0 + footer present (regression guard for the pipefail/set -e
+# truncation bug) + method/path extracted correctly.
+echo; echo "  [Express — exit code, footer, no truncation]"
+DIR=$(make_fixture)
+cat > "$DIR/package.json" <<'JSON'
+{ "name": "tabs", "dependencies": { "express": "^4.18.0" }, "devDependencies": {} }
+JSON
+touch "$DIR/package-lock.json"
+mkdir -p "$DIR/server/routes"
+cat > "$DIR/server/routes/users.ts" <<'TS'
+router.get('/api/users', getUsers);
+router.post('/api/users', createUser);
+TS
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh" 2>/dev/null); CODE=$?
+assert_eq       "6e2 gen-api exits 0"                "$CODE" "0"
+assert_contains "6e2 footer present (not truncated)" "$OUT"  "## See also"
+assert_contains "6e2 GET row"                        "$OUT"  '`GET`'
+assert_contains "6e2 POST row"                       "$OUT"  '`POST`'
+assert_contains "6e2 path shown"                     "$OUT"  '`/api/users`'
+cleanup "$DIR"
+
+# Fastify: always uses the grep+sed path (no rg branch) — guards the sed
+# |-delimiter collision and the truncation/abort bug.
+echo; echo "  [Fastify]"
+DIR=$(make_fixture)
+cat > "$DIR/package.json" <<'JSON'
+{ "name": "fapi", "dependencies": { "fastify": "^4.0.0" }, "devDependencies": {} }
+JSON
+touch "$DIR/package-lock.json"
+mkdir -p "$DIR/routes"
+cat > "$DIR/routes/api.ts" <<'TS'
+fastify.get('/health', h);
+fastify.post('/users', createUser);
+TS
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh" 2>/dev/null); CODE=$?
+assert_eq       "6f gen-api exits 0"         "$CODE" "0"
+assert_contains "6f stack=fastify in header" "$OUT"  "fastify"
+assert_contains "6f footer present"          "$OUT"  "## See also"
+assert_contains "6f GET row (uppercased)"    "$OUT"  '`GET`'
+assert_contains "6f path shown"              "$OUT"  '`/health`'
+cleanup "$DIR"
+
+# Hono: also always uses the grep+sed path.
+echo; echo "  [Hono]"
+DIR=$(make_fixture)
+cat > "$DIR/package.json" <<'JSON'
+{ "name": "hapi", "dependencies": { "hono": "^4.0.0" }, "devDependencies": {} }
+JSON
+touch "$DIR/package-lock.json"
+mkdir -p "$DIR/src"
+cat > "$DIR/src/index.ts" <<'TS'
+const app = new Hono();
+app.get('/ping', (c) => c.text('pong'));
+app.delete('/items/:id', remove);
+TS
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh" 2>/dev/null); CODE=$?
+assert_eq       "6h gen-api exits 0"      "$CODE" "0"
+assert_contains "6h stack=hono in header" "$OUT"  "hono"
+assert_contains "6h footer present"       "$OUT"  "## See also"
+assert_contains "6h GET row"              "$OUT"  '`GET`'
+assert_contains "6h DELETE row"           "$OUT"  '`DELETE`'
+cleanup "$DIR"
+
+# Express with a routes dir but ZERO matching routes — must NOT abort/truncate.
+echo; echo "  [Express — no matching routes, must not truncate]"
+DIR=$(make_fixture)
+cat > "$DIR/package.json" <<'JSON'
+{ "name": "tabs", "dependencies": { "express": "^4.18.0" }, "devDependencies": {} }
+JSON
+touch "$DIR/package-lock.json"
+mkdir -p "$DIR/server/routes"
+cat > "$DIR/server/routes/util.ts" <<'TS'
+export function helper() { return 1; }
+const r = Router();
+app.use('/x', r);
+TS
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh" 2>/dev/null); CODE=$?
+assert_eq       "6z gen-api exits 0 on no-match"  "$CODE" "0"
+assert_contains "6z footer present on no-match"   "$OUT"  "## See also"
+cleanup "$DIR"
+
 # Next.js: correct route extraction
 echo; echo "  [Next.js App Router]"
 DIR=$(make_fixture)

@@ -11,27 +11,12 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# shellcheck source=scripts/llm-docs/detect-stack.sh
+source "$(dirname "$0")/detect-stack.sh"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Find the primary app's package.json — prefer root, then apps/*/package.json
-find_app_pkg() {
-  if [ -f "package.json" ]; then
-    if [ -d "apps" ]; then
-      for d in apps/*/; do
-        [ -f "${d}package.json" ] && { echo "${d}package.json"; return; }
-      done
-    fi
-    echo "package.json"
-  elif [ -d "apps" ]; then
-    for d in apps/*/; do
-      [ -f "${d}package.json" ] && { echo "${d}package.json"; return; }
-    done
-  fi
-  echo ""
-}
-APP_PKG=$(find_app_pkg)
-
-# Helper: detect dependency in the primary app's package.json
+# Helper: check if a dep is present; prints "true" or "false" for use in [ ] tests
 has_dep() {
   [ -z "$APP_PKG" ] && { echo "false"; return; }
   jq -r --arg name "$1" '
@@ -64,17 +49,44 @@ generated_hash: pending
 |---|---|---|---|
 EOF
 
+# Database / ORM
 [ "$(has_dep '@prisma/client')" = "true" ]              && echo "| **Database via Prisma** | active | \`DATABASE_URL\` | \`@prisma/client\` |"
 [ "$(has_dep 'drizzle-orm')" = "true" ]                 && echo "| **Database via Drizzle** | active | \`DATABASE_URL\` | \`drizzle-orm\` |"
+
+# Auth
 [ "$(has_dep 'next-auth')" = "true" ]                   && echo "| **NextAuth** | active | \`NEXTAUTH_SECRET\`, \`NEXTAUTH_URL\` | \`next-auth\` |"
+[ "$(has_dep 'passport')" = "true" ]                    && echo "| **Passport.js (auth)** | active | — | \`passport\` |"
+[ "$(has_dep 'express-session')" = "true" ]             && echo "| **express-session** | active | \`SESSION_SECRET\` | \`express-session\` |"
+[ "$(has_dep 'connect-pg-simple')" = "true" ]           && echo "| **Session store (Postgres)** | active | \`DATABASE_URL\` | \`connect-pg-simple\` |"
+[ "$(has_dep 'bcryptjs')" = "true" ]                    && echo "| **bcryptjs (passwords)** | active | — | \`bcryptjs\` |"
+
+# Storage / BaaS
 [ "$(has_dep '@supabase/supabase-js')" = "true" ]       && echo "| **Supabase** | active | \`NEXT_PUBLIC_SUPABASE_URL\`, \`NEXT_PUBLIC_SUPABASE_ANON_KEY\`, \`SUPABASE_SECRET_KEY\` | \`@supabase/supabase-js\` |"
+
+# Observability
 [ "$(has_dep '@sentry/nextjs')" = "true" ]              && echo "| **Sentry** | active | \`SENTRY_DSN\`, \`SENTRY_AUTH_TOKEN\` | \`@sentry/nextjs\` |"
-[ "$(has_dep '@octokit/core')" = "true" ]               && echo "| **GitHub API** | active | \`GITHUB_APP_ID\`, \`GITHUB_APP_PRIVATE_KEY\` | \`@octokit/core\`, \`@octokit/auth-app\` |"
+[ "$(has_dep '@sentry/node')" = "true" ]                && echo "| **Sentry** | active | \`SENTRY_DSN\` | \`@sentry/node\` |"
+
+# GitHub
+[ "$(has_dep '@octokit/core')" = "true" ]               && echo "| **GitHub API** | active | \`GITHUB_APP_ID\`, \`GITHUB_APP_PRIVATE_KEY\` | \`@octokit/core\` |"
+[ "$(has_dep '@octokit/rest')" = "true" ]               && echo "| **GitHub API** | active | \`GITHUB_TOKEN\` | \`@octokit/rest\` |"
+
+# Payments
 [ "$(has_dep 'stripe')" = "true" ]                      && echo "| **Stripe** | active | \`STRIPE_SECRET_KEY\`, \`STRIPE_WEBHOOK_SECRET\` | \`stripe\` |"
+
+# AI
 [ "$(has_dep '@anthropic-ai/sdk')" = "true" ]           && echo "| **Anthropic** | active | \`ANTHROPIC_API_KEY\` | \`@anthropic-ai/sdk\` |"
 [ "$(has_dep 'openai')" = "true" ]                      && echo "| **OpenAI** | active | \`OPENAI_API_KEY\` | \`openai\` |"
+
+# Google
+[ "$(has_dep 'googleapis')" = "true" ]                  && echo "| **Google APIs** | active | \`GOOGLE_CLIENT_ID\`, \`GOOGLE_CLIENT_SECRET\` | \`googleapis\` |"
+
+# Email
+[ "$(has_dep 'resend')" = "true" ]                      && echo "| **Resend (email)** | active | \`RESEND_API_KEY\` | \`resend\` |"
+[ "$(has_dep '@sendgrid/mail')" = "true" ]              && echo "| **SendGrid (email)** | active | \`SENDGRID_API_KEY\` | \`@sendgrid/mail\` |"
+
+# Data fetching / state
 [ "$(has_dep '@tanstack/react-query')" = "true" ]       && echo "| **TanStack Query** | active | — | \`@tanstack/react-query\` |"
-[ -d apps/docs/scripts/search ]                          && echo "| **OpenAI** (via ai-commands) | active | \`OPENAI_API_KEY\` | \`packages/ai-commands\` |"
 
 cat <<EOF
 
@@ -82,19 +94,24 @@ cat <<EOF
 
 EOF
 
-# Find env vars referenced in apps/docs source
-if command -v rg >/dev/null 2>&1; then
-  ENV_VARS=$(rg --no-filename -oI 'process\.env\.[A-Z_]+' apps/docs --type ts --type tsx 2>/dev/null \
+# Scan detected source dirs for process.env.* references
+if command -v rg >/dev/null 2>&1 && [ -n "${SRC_DIRS:-}" ]; then
+  # shellcheck disable=SC2086
+  ENV_VARS=$(rg --no-filename -oI 'process\.env\.[A-Z_]+' $SRC_DIRS --type ts 2>/dev/null \
     | sed 's/process\.env\.//' | sort -u | head -40 || true)
   if [ -n "$ENV_VARS" ]; then
-    echo "Found in \`apps/docs/\` source files:"
+    echo "Found in source files ($(echo "$SRC_DIRS" | tr ' ' ',')):"
     echo
     while IFS= read -r v; do
       [ -n "$v" ] && echo "- \`$v\`"
     done <<< "$ENV_VARS"
+  else
+    echo "_No \`process.env.*\` references found in \`$SRC_DIRS\`._"
   fi
-else
+elif ! command -v rg >/dev/null 2>&1; then
   echo "_ripgrep not installed; env var detection skipped._"
+else
+  echo "_No source dirs detected; env var scan skipped._"
 fi
 
 cat <<EOF
@@ -103,15 +120,7 @@ cat <<EOF
 
 No flag SDK currently installed.
 
-Env-var-based feature toggles (detected and known):
-
-| Env var | Purpose |
-|---|---|
-| \`SKIP_EMBEDDINGS\` | Skip embedding generation on dev start |
-| \`SKIP_SITEMAP\` | Skip sitemap generation in build |
-| \`ENABLE_SENTRY\` | Toggle Sentry in dev |
-| \`ANALYZE\` | Run bundle analyzer |
-| \`NEXT_TELEMETRY_DISABLED\` | Disable Next.js anonymous telemetry |
+Env-var-based feature toggles (scan source for \`process.env.ENABLE_\` / \`process.env.SKIP_\` / \`process.env.DISABLE_\` patterns to identify active flags).
 
 ---
 

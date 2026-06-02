@@ -13,6 +13,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# shellcheck source=scripts/llm-docs/detect-stack.sh
+source "$(dirname "$0")/detect-stack.sh"
+
 MODE="${1:-validate}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 INDEX=.agents/index.json
@@ -78,17 +81,15 @@ fi
 log "Running validation pass"
 errors=0
 
-# Check 1: every endpoint mentioned in API.md exists as a route.ts
+# Check 1: every endpoint mentioned in API.md exists as a route handler
 log "  - checking API.md endpoints exist"
-if [ -f docs/API.md ] && [ -d apps/docs/app/api ]; then
+if [ -f docs/API.md ] && [ -n "${API_DIR:-}" ] && [ -d "$API_DIR" ]; then
   endpoints=$(grep -oE '`/api/[a-zA-Z0-9/_:.-]+`' docs/API.md | tr -d '`' | sort -u || true)
   while IFS= read -r ep; do
     [ -z "$ep" ] && continue
-    # Convert URL path back to a directory path under app/api/
     dir_path=$(echo "$ep" | sed 's|/api/||' | sed 's|:|[|g' | sed 's|/$||')
-    # Tolerate some path variants
-    if ! find apps/docs/app/api -name 'route.ts' 2>/dev/null | grep -q "$dir_path" \
-       && ! find apps/docs/app/api -name 'route.ts' 2>/dev/null | grep -q "$(echo "$dir_path" | sed 's|\[[^]]*\]|.*|g')"; then
+    if ! find "$API_DIR" -name '*.ts' 2>/dev/null | grep -q "$dir_path" \
+       && ! find "$API_DIR" -name '*.ts' 2>/dev/null | grep -q "$(echo "$dir_path" | sed 's|\[[^]]*\]|.*|g')"; then
       suggest "stale: API endpoint" "API.md lists \`$ep\` but no matching route handler found. Verify or remove from API.md."
       errors=$((errors+1))
     fi
@@ -105,7 +106,8 @@ if [ -f docs/OPS.md ] && command -v rg >/dev/null 2>&1; then
     case "$v" in
       MYSQL|TLS|WAF|DDoS|TODO|JSON|HTTPS|HTTP|URL|API|UI|CLI|DSN|PEM|SQL|HTML|CSS|JSX|RSC|MDX) continue;;
     esac
-    if ! rg -q "$v" apps/docs/ packages/ scripts/ 2>/dev/null; then
+    # shellcheck disable=SC2086
+    if ! rg -q "$v" ${SRC_DIRS:-} scripts/ 2>/dev/null; then
       suggest "stale: env var" "OPS.md mentions \`$v\` but it doesn't appear in source. Verify or remove."
       errors=$((errors+1))
     fi

@@ -12,6 +12,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# shellcheck source=scripts/llm-docs/detect-stack.sh
+source "$(dirname "$0")/detect-stack.sh"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Helper: lookup a generic annotation for a well-known directory name.
@@ -32,6 +35,12 @@ annotate_dir() {
     tests|test|__tests__)  echo "Test suites";;
     public)           echo "Static assets served as-is";;
     config)           echo "Configuration";;
+    server)           echo "Express API server";;
+    server/routes)    echo "Route handlers (one file per domain)";;
+    client)           echo "Frontend SPA (Vite/React)";;
+    shared)           echo "Code shared between client and server";;
+    db)               echo "Database schema and migrations";;
+    drizzle)          echo "Drizzle ORM migrations";;
     prisma)           echo "Prisma schema + migrations";;
     migrations|db/migrate)  echo "Database migrations";;
     terraform|pulumi|cdk)   echo "Infrastructure-as-code";;
@@ -85,41 +94,78 @@ for d in $top_dirs; do
 done
 echo '```'
 
-echo
-echo "## apps/docs/ — the application"
-echo
-echo '```'
-echo "apps/docs/"
-find apps/docs -maxdepth 1 -mindepth 1 -type d \
-  ! -path '*/node_modules' ! -path '*/.next' ! -path '*/.turbo' \
-  | sort | while read -r d; do
-  rel=${d#apps/docs/}
-  ann=$(annotate_dir "apps/docs/$rel")
-  if [ -n "$ann" ]; then
-    printf "├── %-15s %s\n" "$rel/" "$ann"
-  else
-    printf "├── %s/\n" "$rel"
-  fi
-done
-echo '```'
+# Monorepo: enumerate the primary app subdir
+if [ "$IS_MONOREPO" = "true" ] && [ -n "$APP_ROOT" ] && [ -d "$APP_ROOT" ]; then
+  echo
+  echo "## $APP_ROOT/ — the application"
+  echo
+  echo '```'
+  echo "$APP_ROOT/"
+  find "$APP_ROOT" -maxdepth 1 -mindepth 1 -type d \
+    ! -path '*/node_modules' ! -path '*/.next' ! -path '*/.turbo' \
+    | sort | while read -r d; do
+    rel=${d#"$APP_ROOT"/}
+    subann=$(annotate_dir "$rel")
+    if [ -n "$subann" ]; then
+      printf "├── %-15s %s\n" "$rel/" "$subann"
+    else
+      printf "├── %s/\n" "$rel"
+    fi
+  done
+  echo '```'
+fi
 
-echo
-echo "## packages/ — shared libraries"
-echo
-echo '```'
-echo "packages/"
-find packages -maxdepth 1 -mindepth 1 -type d \
-  ! -path '*/node_modules' \
-  | sort | while read -r d; do
-  rel=${d#packages/}
-  ann=$(annotate_dir "packages/$rel")
-  if [ -n "$ann" ]; then
-    printf "├── %-25s %s\n" "$rel/" "$ann"
-  else
-    printf "├── %s/\n" "$rel"
-  fi
-done
-echo '```'
+# Packages dir (monorepos and some single-package repos with a packages/ dir)
+if [ -d "packages" ]; then
+  echo
+  echo "## packages/ — shared libraries"
+  echo
+  echo '```'
+  echo "packages/"
+  find packages -maxdepth 1 -mindepth 1 -type d \
+    ! -path '*/node_modules' \
+    | sort | while read -r d; do
+    rel=${d#packages/}
+    subann=$(annotate_dir "packages/$rel")
+    [ -z "$subann" ] && subann=$(annotate_dir "$rel")
+    if [ -n "$subann" ]; then
+      printf "├── %-25s %s\n" "$rel/" "$subann"
+    else
+      printf "├── %s/\n" "$rel"
+    fi
+  done
+  echo '```'
+fi
+
+# Single-package repos: enumerate key top-level source dirs
+if [ "$IS_MONOREPO" = "false" ]; then
+  for key_dir in server client src shared; do
+    [ -d "$key_dir" ] || continue
+    key_ann=$(annotate_dir "$key_dir")
+    echo
+    if [ -n "$key_ann" ]; then
+      echo "## $key_dir/ — $key_ann"
+    else
+      echo "## $key_dir/"
+    fi
+    echo
+    echo '```'
+    echo "$key_dir/"
+    find "$key_dir" -maxdepth 1 -mindepth 1 -type d \
+      ! -path '*/node_modules' \
+      | sort | while read -r d; do
+      rel=${d#"$key_dir"/}
+      subann=$(annotate_dir "$key_dir/$rel")
+      [ -z "$subann" ] && subann=$(annotate_dir "$rel")
+      if [ -n "$subann" ]; then
+        printf "├── %-15s %s\n" "$rel/" "$subann"
+      else
+        printf "├── %s/\n" "$rel"
+      fi
+    done
+    echo '```'
+  done
+fi
 
 # Statistics
 ALL_FILES=$(git ls-files 2>/dev/null | wc -l | tr -d ' ' || echo 0)

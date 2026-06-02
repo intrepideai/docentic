@@ -58,6 +58,14 @@ jobs:
           test -f .agents/index.json
           test -f scripts/llm-docs/MAINTAIN.md
           test -x scripts/llm-docs/gen-stack.sh
+          # Regression: detect-stack.sh must be scaffolded — every generator
+          # sources it, so if it's missing they all fail at startup.
+          test -f scripts/llm-docs/detect-stack.sh
+          # Run generators end-to-end after a real init (an existence check alone
+          # would miss sourcing/exec breakage).
+          bash scripts/llm-docs/gen-stack.sh > /dev/null
+          bash scripts/llm-docs/gen-api.sh > /dev/null
+          bash scripts/llm-docs/gen-data.sh > /dev/null
           # Verify JSON is valid
           jq -e . .agents/index.json > /dev/null
           jq -e . research/index.json > /dev/null
@@ -186,3 +194,23 @@ jobs:
           grep -q "detected in:.*backend" out.log || (echo "✗ 'detected in' should include backend"; cat out.log; exit 1)
 
           echo "✓ stack detection smoke test passed"
+
+  shell-tests:
+    # Unit tests for the templates/scripts/llm-docs/ generators. Runs both code
+    # paths: the grep+sed fallback (what most machines hit) and the ripgrep path.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generator shell tests — grep fallback (ripgrep absent)
+        run: |
+          # Guarantee the grep+sed fallback is exercised by removing any rg.
+          sudo rm -f "$(command -v rg 2>/dev/null)" 2>/dev/null || true
+          command -v rg >/dev/null 2>&1 && echo "warning: rg still present" || echo "rg absent ✓"
+          bash test/shell-scripts.sh
+
+      - name: Generator shell tests — ripgrep present
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep
+          rg --version | head -1
+          bash test/shell-scripts.sh

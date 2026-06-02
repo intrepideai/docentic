@@ -1,27 +1,25 @@
 #!/usr/bin/env bash
 # gen-api.sh — generate docs/API.md
 #
-# Reads:  app/api/**/route.ts or apps/*/app/api/** (Next.js App Router handlers)
+# Reads:  route files under API_DIR (detected by detect-stack.sh)
+#           Next.js App Router: app/api/**/route.ts
+#           Express:            server/routes/*.ts
+#           Fastify:            routes/**/*.ts
+#           Hono:               entry file where "new Hono" appears
 # Writes: stdout
-#
-# Extracts: HTTP method exports + path inferred from file location
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# shellcheck source=scripts/llm-docs/detect-stack.sh
+source "$(dirname "$0")/detect-stack.sh"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Find the API route dir — Next.js App Router patterns, with fallbacks
-find_api_dir() {
-  for p in app/api apps/*/app/api src/app/api src/api src/routes pages/api apps/*/pages/api; do
-    [ -d "$p" ] && { echo "$p"; return; }
-  done
-  echo ""
-}
-API_DIR=$(find_api_dir)
-[ -z "$API_DIR" ] && API_DIR="app/api"  # fallback for header
+# Fallback API_DIR label for the header
+DISPLAY_DIR="${API_DIR:-<none detected>}"
 
 cat <<EOF
 ---
@@ -40,28 +38,23 @@ generated_hash: pending
 
 > **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
 > **Purpose:** Inventory of HTTP endpoints exposed by this repo.
-> **Source of truth:** route handlers under [\`$API_DIR/\`](../$API_DIR/)
-
-All endpoints are Next.js Route Handlers (\`route.ts\` files). Auth is via NextAuth session cookies unless noted.
+> **Source of truth:** route handlers under [\`$DISPLAY_DIR/\`](../$DISPLAY_DIR/)
+> **Stack:** \`$STACK_TYPE\`
 
 ## Endpoint inventory
 
 EOF
 
-if [ -d "$API_DIR" ]; then
-  # Find all route.ts files and extract methods
+# ---- Next.js App Router ----
+if [[ "$STACK_TYPE" == nextjs-* ]] && [ -d "${API_DIR:-}" ]; then
   find "$API_DIR" -name 'route.ts' ! -name '*.test.ts' | sort | while read -r route_file; do
-    # Convert file path to URL path
     url_path=$(echo "$route_file" | sed "s|$API_DIR||" | sed 's|/route.ts$||' | sed 's|\[\.\.\.|...|g' | sed 's|\[|:|g' | sed 's|\]||g')
     [ -z "$url_path" ] && url_path="/"
     url_path="/api$url_path"
 
-    # Extract HTTP method exports from the file
     methods=$(grep -E '^export (async )?function (GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)' "$route_file" 2>/dev/null \
               | sed -E 's/^export (async )?function ([A-Z]+).*/\2/' \
-              | sort -u \
-              | tr '\n' ',' \
-              | sed 's/,$//')
+              | sort -u | tr '\n' ',' | sed 's/,$//' || true)
 
     if [ -n "$methods" ]; then
       echo "### \`$url_path\`"
@@ -76,7 +69,7 @@ if [ -d "$API_DIR" ]; then
     fi
   done
 
-  # Also list NextAuth catch-all
+  # NextAuth catch-all
   if [ -d "$API_DIR/auth/[...nextauth]" ]; then
     cat <<EOF
 ### \`/api/auth/[...nextauth]\`
@@ -88,9 +81,66 @@ if [ -d "$API_DIR" ]; then
 EOF
   fi
 
-  # GraphiQL playground (if present anywhere under app/)
-  if find . -type d -name 'graphiql' -not -path '*/node_modules/*' 2>/dev/null | head -1 | grep -q .; then
-    cat <<EOF
+# ---- Express ----
+elif [ "$STACK_TYPE" = "express" ] && [ -d "${API_DIR:-}" ]; then
+  echo "| Method | Path | File |"
+  echo "|---|---|---|"
+  if command -v rg >/dev/null 2>&1; then
+    { rg --no-filename -oI '(app|router)\.(get|post|put|patch|delete)\s*\(\s*["'"'"'][^"'"'"']+["'"'"']' \
+      "$API_DIR" --type ts 2>/dev/null \
+      | sed -E "s/(app|router)\\.([a-z]+)[[:space:]]*\\([[:space:]]*[\"']([^\"']+)[\"'].*/\\2\t\\3/" \
+      | awk -F'\t' '{print toupper($1) "\t" $2}' \
+      | sort -t$'\t' -k2 \
+      | while IFS=$'\t' read -r method path; do
+          echo "| \`$method\` | \`$path\` | \`$API_DIR/\` |"
+        done; } || true
+  else
+    { grep -rE '(app|router)\.(get|post|put|patch|delete)\s*\(' "$API_DIR" --include='*.ts' 2>/dev/null \
+      | sed -E "s#^([^:]+):.*\\.(get|post|put|patch|delete)[[:space:]]*\\([[:space:]]*[\"']([^\"']+)[\"'].*#\\2\t\\3\t\\1#" \
+      | awk -F'\t' '{print toupper($1) "\t" $2 "\t" $3}' \
+      | sort -t$'\t' -k2 \
+      | while IFS=$'\t' read -r method path file; do
+          echo "| \`$method\` | \`$path\` | [\`$file\`](../$file) |"
+        done; } || true
+  fi
+  echo
+
+# ---- Fastify ----
+elif [ "$STACK_TYPE" = "fastify" ] && [ -d "${API_DIR:-}" ]; then
+  echo "| Method | Path | File |"
+  echo "|---|---|---|"
+  { grep -rE 'fastify\.(get|post|put|patch|delete)\s*\(' "$API_DIR" --include='*.ts' 2>/dev/null \
+    | sed -E "s#^([^:]+):.*fastify\\.(get|post|put|patch|delete)[[:space:]]*\\([[:space:]]*[\"']([^\"']+)[\"'].*#\\2\t\\3\t\\1#" \
+    | awk -F'\t' '{print toupper($1) "\t" $2 "\t" $3}' \
+    | sort -t$'\t' -k2 \
+    | while IFS=$'\t' read -r method path file; do
+        echo "| \`$method\` | \`$path\` | [\`$file\`](../$file) |"
+      done; } || true
+  echo
+
+# ---- Hono ----
+elif [ "$STACK_TYPE" = "hono" ] && [ -n "${API_DIR:-}" ] && [ -d "$API_DIR" ]; then
+  echo "| Method | Path | File |"
+  echo "|---|---|---|"
+  { grep -rE '\.(get|post|put|patch|delete)\s*\(' "$API_DIR" --include='*.ts' --include='*.tsx' 2>/dev/null \
+    | sed -E "s#^([^:]+):.*\\.(get|post|put|patch|delete)[[:space:]]*\\([[:space:]]*[\"']([^\"']+)[\"'].*#\\2\t\\3\t\\1#" \
+    | awk -F'\t' '{print toupper($1) "\t" $2 "\t" $3}' \
+    | sort -t$'\t' -k2 \
+    | while IFS=$'\t' read -r method path file; do
+        echo "| \`$method\` | \`$path\` | [\`$file\`](../$file) |"
+      done; } || true
+  echo
+
+# ---- Unknown / no API dir ----
+else
+  echo "_No API routes found. Stack detected as \`$STACK_TYPE\`; searched \`${API_DIR:-<no dir detected>}\`._"
+  echo
+  echo "_Once routes are added, re-run \`gen-api.sh\` to populate this file._"
+fi
+
+# GraphiQL playground (framework-agnostic check)
+if find . -type d -name 'graphiql' -not -path '*/node_modules/*' 2>/dev/null | head -1 | grep -q .; then
+  cat <<EOF
 ## Playground
 
 | Path | Notes |
@@ -98,10 +148,6 @@ EOF
 | \`/graphiql\` | GraphiQL UI for the \`/api/graphql\` endpoint (dev) |
 
 EOF
-  fi
-else
-  echo
-  echo "_No API routes found at \`$API_DIR/\`. API.md is a placeholder until route handlers exist._"
 fi
 
 cat <<EOF

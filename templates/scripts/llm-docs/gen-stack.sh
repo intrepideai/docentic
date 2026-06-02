@@ -11,6 +11,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# shellcheck source=scripts/llm-docs/detect-stack.sh
+source "$(dirname "$0")/detect-stack.sh"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Helper: extract a field from a package.json
@@ -66,6 +69,15 @@ TAILWIND_VERSION=$(detect_dep tailwindcss || true)
 SUPABASE_VERSION=$(detect_dep '@supabase/supabase-js' || true)
 NEXTAUTH_VERSION=$(detect_dep 'next-auth' || true)
 DRIZZLE_VERSION=$(detect_dep 'drizzle-orm' || true)
+EXPRESS_VERSION=$(detect_dep express || true)
+VITE_VERSION=$(detect_dep vite || true)
+FASTIFY_VERSION=$(detect_dep fastify || true)
+HONO_VERSION=$(detect_dep hono || true)
+TANSTACK_VERSION=$(detect_dep '@tanstack/react-query' || true)
+PASSPORT_VERSION=$(detect_dep passport || true)
+RESEND_VERSION=$(detect_dep resend || true)
+GOOGLEAPIS_VERSION=$(detect_dep googleapis || true)
+OCTOKIT_VERSION=$(detect_dep '@octokit/rest' || true)
 
 # --- Output ---
 cat <<EOF
@@ -85,7 +97,7 @@ generated_hash: pending
 
 > **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
 > **Purpose:** Tech stack and runtime versions for this repo.
-> **Source of truth:** [\`package.json\`](../package.json)${APP_PKG:+, [\`$APP_PKG\`](../$APP_PKG)}
+> **Source of truth:** [\`package.json\`](../package.json)$( [ "$IS_MONOREPO" = "true" ] && echo ", [\`$APP_PKG\`](../$APP_PKG)" )
 
 ## Repo
 
@@ -108,15 +120,25 @@ generated_hash: pending
 |---|---|
 EOF
 
-[ -n "$NEXT_VERSION" ]      && echo "| Next.js          | \`$NEXT_VERSION\` |"
-[ -n "$REACT_VERSION" ]     && echo "| React            | \`$REACT_VERSION\` |"
-[ -n "$PRISMA_VERSION" ]    && echo "| Prisma           | \`$PRISMA_VERSION\` |"
-[ -n "$DRIZZLE_VERSION" ]   && echo "| Drizzle ORM      | \`$DRIZZLE_VERSION\` |"
-[ -n "$NEXTAUTH_VERSION" ]  && echo "| NextAuth         | \`$NEXTAUTH_VERSION\` |"
-[ -n "$TAILWIND_VERSION" ]  && echo "| Tailwind CSS     | \`$TAILWIND_VERSION\` |"
-[ -n "$SENTRY_VERSION" ]    && echo "| Sentry (nextjs)  | \`$SENTRY_VERSION\` |"
-[ -n "$SUPABASE_VERSION" ]  && echo "| @supabase/supabase-js | \`$SUPABASE_VERSION\` |"
+[ -n "$NEXT_VERSION" ]        && echo "| Next.js              | \`$NEXT_VERSION\` |"
+[ -n "$REACT_VERSION" ]       && echo "| React                | \`$REACT_VERSION\` |"
+[ -n "$EXPRESS_VERSION" ]     && echo "| Express              | \`$EXPRESS_VERSION\` |"
+[ -n "$FASTIFY_VERSION" ]     && echo "| Fastify              | \`$FASTIFY_VERSION\` |"
+[ -n "$HONO_VERSION" ]        && echo "| Hono                 | \`$HONO_VERSION\` |"
+[ -n "$VITE_VERSION" ]        && echo "| Vite                 | \`$VITE_VERSION\` |"
+[ -n "$PRISMA_VERSION" ]      && echo "| Prisma               | \`$PRISMA_VERSION\` |"
+[ -n "$DRIZZLE_VERSION" ]     && echo "| Drizzle ORM          | \`$DRIZZLE_VERSION\` |"
+[ -n "$NEXTAUTH_VERSION" ]    && echo "| NextAuth             | \`$NEXTAUTH_VERSION\` |"
+[ -n "$TAILWIND_VERSION" ]    && echo "| Tailwind CSS         | \`$TAILWIND_VERSION\` |"
+[ -n "$SENTRY_VERSION" ]      && echo "| Sentry (nextjs)      | \`$SENTRY_VERSION\` |"
+[ -n "$SUPABASE_VERSION" ]    && echo "| @supabase/supabase-js | \`$SUPABASE_VERSION\` |"
+[ -n "$TANSTACK_VERSION" ]    && echo "| TanStack Query       | \`$TANSTACK_VERSION\` |"
+[ -n "$PASSPORT_VERSION" ]    && echo "| Passport.js          | \`$PASSPORT_VERSION\` |"
+[ -n "$RESEND_VERSION" ]      && echo "| Resend               | \`$RESEND_VERSION\` |"
+[ -n "$GOOGLEAPIS_VERSION" ]  && echo "| Google APIs          | \`$GOOGLEAPIS_VERSION\` |"
+[ -n "$OCTOKIT_VERSION" ]     && echo "| @octokit/rest        | \`$OCTOKIT_VERSION\` |"
 
+if [ "$IS_MONOREPO" = "true" ]; then
 cat <<EOF
 
 ## Workspaces
@@ -124,7 +146,7 @@ cat <<EOF
 ### Apps (${#APPS_PACKAGES[@]})
 
 EOF
-for app in "${APPS_PACKAGES[@]}"; do
+for app in "${APPS_PACKAGES[@]+"${APPS_PACKAGES[@]}"}"; do
   echo "- \`apps/$app\`"
 done
 
@@ -133,9 +155,10 @@ cat <<EOF
 ### Packages (${#WORKSPACE_PACKAGES[@]})
 
 EOF
-for pkg in "${WORKSPACE_PACKAGES[@]}"; do
+for pkg in "${WORKSPACE_PACKAGES[@]+"${WORKSPACE_PACKAGES[@]}"}"; do
   echo "- \`packages/$pkg\`"
 done
+fi
 
 if [ -n "$CATALOG_BLOCK" ]; then
 cat <<EOF

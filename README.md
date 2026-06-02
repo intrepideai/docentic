@@ -8,7 +8,7 @@
 <h1 align="center">docentic</h1>
 
 <p align="center">
-  <em>Your agent guide through any codebase.</em>
+  <em>Your agent guide through any JS/TS codebase.</em>
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="#two-ways-to-start--pick-one-and-copy"><b>Quick start</b></a> ·
+  <a href="#three-ways-to-start--pick-one-and-copy"><b>Quick start</b></a> ·
   <a href="#why"><b>Why</b></a> ·
   <a href="#what-you-get"><b>What you get</b></a> ·
   <a href="#commands"><b>Commands</b></a> ·
@@ -31,7 +31,7 @@
 
 **Make your repo agent-friendly in one command.**
 
-`docentic` scaffolds a standardized documentation spine into any codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
+`docentic` scaffolds a standardized documentation spine into any JS/TS codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
 
 > A docent guides visitors through a museum. `docentic` does the same for your repo — for both humans and AI agents. (The name is the adjective form: tools that are *docentic* are tools that act like a docent.)
 
@@ -49,7 +49,7 @@
 npx @intrepideai/docentic init
 ```
 
-That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Stack-aware auto-detection.
+That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Works with any stack in the JS/TS ecosystem.
 
 ### 2. In any agent with repo filesystem access (Claude Code · Cursor agent · Codex CLI · Gemini CLI · …)
 
@@ -110,7 +110,7 @@ Agent: *greps for "model"*
 ```text
 You: "What's the data model?"
 Agent: *reads AGENTS.md → docs/DATA.md*
-        *quotes the actual Prisma schema with line numbers*
+        *quotes the actual schema with line numbers*
         *links back to ARCHITECTURE.md for context*
 ```
 
@@ -118,8 +118,8 @@ Agent: *reads AGENTS.md → docs/DATA.md*
 |---|---|---|
 | Entry point | README.md (for humans) | `AGENTS.md` (for agents) |
 | Architecture intent | In someone's head | `docs/ARCHITECTURE.md` (the anchor) |
-| Data model | Scattered across migrations | `docs/DATA.md` (regenerated daily) |
-| API surface | Greppable, sometimes | `docs/API.md` (regenerated daily) |
+| Data model | Scattered across migrations | `docs/DATA.md` (auto-regenerated) |
+| API surface | Greppable, sometimes | `docs/API.md` (auto-regenerated) |
 | Known decisions | Buried in PR threads | `docs/DECISIONS.md` (ADRs) |
 | What changed lately | `git log` (verbose) | `docs/HISTORY.md` (curated) |
 | External research | None | `research/` (compounds over time) |
@@ -131,7 +131,7 @@ The whole point: **same shape across every repo in your fleet**, so any agent (o
 
 ## Full walkthrough
 
-The two-line setup at the top handles 90% of repos. Here's the longer version with every option.
+The quick-start commands above handle 90% of repos. Here's the longer version with every option.
 
 ### 1. Install (or skip — use `npx`)
 
@@ -216,7 +216,7 @@ graph TD
     class H ai
 ```
 
-**Legend:** purple solid = generated daily · purple dashed = manual · solid filled = AI-maintained · `ARCHITECTURE.md` = the anchor.
+**Legend:** purple solid = auto-regenerated · purple dashed = manual · solid filled = AI-maintained · `ARCHITECTURE.md` = the anchor.
 
 <details>
 <summary>Or as a raw file tree</summary>
@@ -236,7 +236,7 @@ your-repo/
 │   └── prompts/                           Per-task agent prompts
 ├── docs/
 │   ├── ARCHITECTURE.md                    THE ANCHOR — everything else points here
-│   ├── STACK / DATA / API / MAP           Generated daily
+│   ├── STACK / DATA / API / MAP           Auto-regenerated
 │   ├── INTEGRATIONS / OPS                 Manual, critical
 │   ├── CONVENTIONS / GLOSSARY             Manual, auto-merge after 24h
 │   ├── SECURITY-NOTES / DECISIONS         Manual, critical (review required)
@@ -267,7 +267,7 @@ docentic init [path]              Scaffold the template into a repo
   --branch <name>               Custom branch name (default: docentic/template-scaffold)
 
 docentic populate [path]          Fill scaffolded TODOs using an LLM
-  --model <name>                Claude model (default: claude-sonnet-4-7)
+  --model <name>                Claude model (default: claude-sonnet-4-6)
   --max-cost <usd>              Abort if estimated cost exceeds this (default: 5)
   --no-pr                       Commit on a branch but don't open a PR
   --no-commit                   Apply edits without git operations
@@ -468,7 +468,7 @@ Copyright © 2026 Intrepide.
 ---
 
 <p align="center">
-  Made by <a href="https://github.com/intrepideai">Intrepide</a>. Built for any agent, any LLM, any codebase.
+  Made by <a href="https://github.com/intrepideai">Intrepide</a>. Built for any agent, any LLM, any JS/TS codebase.
 </p>
 
 <p align="center">

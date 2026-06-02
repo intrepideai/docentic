@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-06-02
+
+Makes the `scripts/llm-docs/` generators stack-agnostic across the JS/TS
+ecosystem. They previously assumed a Next.js + Prisma + pnpm monorepo and
+crashed or produced wrong output on anything else (an Express + Drizzle + Vite
+single-package repo, for example).
+
+### Added
+- **Stack auto-detection** (`detect-stack.sh`, sourced by every generator): detects Next.js (monorepo/single), Express, Fastify, and Hono; Prisma vs. Drizzle; npm/pnpm/yarn/bun; and the API-route and schema-file locations.
+- **Express, Fastify, and Hono** endpoint extraction in `gen-api.sh`.
+- **Drizzle** schema support in `gen-data.sh` (alongside Prisma), plus a no-ORM placeholder with a raw-migrations fallback.
+- Broader dependency detection in `gen-stack.sh` / `gen-integrations.sh` (Express, Vite, Fastify, Hono, TanStack Query, Passport, bcryptjs, express-session, Resend, googleapis, Octokit, SendGrid, `@sentry/node`, …).
+- Dynamic `gen-map.sh` sections for single-package repos (`server/`, `client/`, `shared/`, `drizzle/`) instead of a hardcoded `apps/docs/` + `packages/` layout.
+- A 93-assertion shell test suite (`test/shell-scripts.sh`) wired into CI on both the grep-fallback and ripgrep code paths, plus an end-to-end generator run after `init`.
+
+### Fixed
+- `docentic init` now scaffolds `detect-stack.sh`. Without it, every generator failed at startup (`source: No such file or directory`) on a freshly scaffolded repo.
+- `gen-api.sh` no longer truncates `API.md`: fixed a `sed` delimiter colliding with the route-method alternation (it aborted under `set -e`+`pipefail` on Fastify/Hono and on Express without ripgrep), an Express field-order bug that left methods lowercase, and aborts when no routes match the patterns.
+- `detect-stack.sh` no longer aborts all generators on a Hono repo that has no `new Hono` match.
+
+### Docs
+- README accuracy fixes: "any codebase" → "any JS/TS codebase", a broken Quick-start nav anchor, "regenerated daily" → "auto-regenerated", and an invalid default model id (`claude-sonnet-4-7` → `claude-sonnet-4-6`).
+
 ## [0.2.1] — 2026-05-25
 
 Marketplace prep release. Tweaks to the GitHub Action so its listing looks
@@ -145,7 +168,8 @@ and detect more of what's actually in the repo.
 - CI: typecheck + two smoke tests (dry-run, full scaffold)
 - README with dual copy-paste hero (terminal + LLM prompt), comparison table, Mermaid spine diagram, "agent-friendly" badge for downstream repos
 
-[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/intrepideai/docentic/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/intrepideai/docentic/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/intrepideai/docentic/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/intrepideai/docentic/compare/v0.1.0...v0.1.1

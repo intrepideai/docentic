@@ -267,7 +267,7 @@ docentic init [path]              Scaffold the template into a repo
   --branch <name>               Custom branch name (default: docentic/template-scaffold)
 
 docentic populate [path]          Fill scaffolded TODOs using an LLM
-  --model <name>                Claude model (default: claude-sonnet-4-6)
+  --model <name>                model id (default: provider's default, e.g. claude-sonnet-4-6)
   --max-cost <usd>              Abort if estimated cost exceeds this (default: 5)
   --no-pr                       Commit on a branch but don't open a PR
   --no-commit                   Apply edits without git operations
@@ -396,13 +396,13 @@ Prompts split by job:
 
 Copy [`.env.example`](./.env.example) to `.env` and fill in one of:
 
-| Provider | Var | Notes |
-|---|---|---|
-| Anthropic (default) | `ANTHROPIC_API_KEY` | Recommended — Claude has the best repo-reasoning we've tested |
-| OpenAI | `OPENAI_API_KEY` | |
-| Google | `GEMINI_API_KEY` | |
+| Provider | Var | Model API | Notes |
+|---|---|---|---|
+| Anthropic (default) | `ANTHROPIC_API_KEY` | Messages + tool use | Recommended — Claude has the best repo-reasoning we've tested |
+| OpenAI | `OPENAI_API_KEY` | Chat Completions + function calling | Honors `OPENAI_MODEL` and `OPENAI_BASE_URL` (Azure / compatible gateways) |
+| Google | `GEMINI_API_KEY` | `generateContent` + function calling | Honors `GEMINI_MODEL` |
 
-`docentic init` itself needs no API keys — it's pure scaffolding.
+`populate` picks the provider from `DOCENT_PROVIDER` if set, otherwise the first key present (Anthropic → OpenAI → Gemini). `docentic init` itself needs no API keys — it's pure scaffolding.
 
 ### `research/config.yml` (per-repo)
 

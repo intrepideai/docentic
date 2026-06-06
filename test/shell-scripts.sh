@@ -680,6 +680,38 @@ done
 cleanup "$DIR"
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SUITE 10 — Go language adapter (lang/go.sh)
+echo
+echo "━━━ Suite 10: Go adapter (gen-* on a Go repo) ━━━"
+echo
+
+DIR=$(make_fixture)
+mkdir -p "$DIR/cmd/api" "$DIR/internal/models"
+printf 'module github.com/acme/billing\n\ngo 1.22\n\nrequire (\n\tgithub.com/gin-gonic/gin v1.10.0\n\tgorm.io/gorm v1.25.5\n\tgithub.com/jackc/pgx/v5 v5.5.0\n\tgithub.com/stripe/stripe-go/v76 v76.0.0\n)\n' > "$DIR/go.mod"
+printf 'package main\nimport ("os"; "github.com/gin-gonic/gin")\nfunc main() {\n\t_ = os.Getenv("DATABASE_URL")\n\tr := gin.Default()\n\tr.GET("/invoices", h)\n\tr.POST("/invoices", h)\n}\n' > "$DIR/cmd/api/main.go"
+printf 'package models\nimport "gorm.io/gorm"\ntype Invoice struct {\n\tgorm.Model\n\tAmount int\n}\ntype Config struct {\n\tPort int\n}\n' > "$DIR/internal/models/models.go"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-stack.sh")
+assert_contains "10 stack: module"             "$OUT" "github.com/acme/billing"
+assert_contains "10 stack: go version"         "$OUT" '`1.22`'
+assert_contains "10 stack: dep gin"            "$OUT" "gin"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh")
+assert_contains "10 api: stack=go"             "$OUT" '`go`'
+assert_contains "10 api: GET /invoices"        "$OUT" "/invoices"
+assert_contains "10 api: file link"            "$OUT" "cmd/api/main.go"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-data.sh")
+assert_contains "10 data: GORM"                "$OUT" "GORM"
+assert_contains "10 data: Invoice model"       "$OUT" '`Invoice`'
+assert_not_contains "10 data: non-model Config excluded" "$OUT" '`Config`'
+OUT=$(bash "$DIR/scripts/llm-docs/gen-integrations.sh")
+assert_contains "10 integ: PostgreSQL"         "$OUT" "PostgreSQL"
+assert_contains "10 integ: env DATABASE_URL"   "$OUT" "DATABASE_URL"
+for g in gen-stack gen-api gen-data gen-integrations gen-map; do
+  assert_exits_ok "10 $g.sh exits 0 on Go repo" "$DIR/scripts/llm-docs/$g.sh"
+done
+cleanup "$DIR"
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Summary
 # ══════════════════════════════════════════════════════════════════════════════
 echo

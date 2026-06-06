@@ -712,6 +712,42 @@ done
 cleanup "$DIR"
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SUITE 11 — Ruby / Rails language adapter (lang/ruby.sh)
+echo
+echo "━━━ Suite 11: Ruby adapter (gen-* on a Rails repo) ━━━"
+echo
+
+DIR=$(make_fixture)
+mkdir -p "$DIR/config" "$DIR/app/models" "$DIR/app/controllers"
+printf 'source "https://rubygems.org"\nruby "3.3.0"\ngem "rails", "~> 7.1"\ngem "pg"\ngem "sidekiq"\ngem "stripe"\n' > "$DIR/Gemfile"
+echo "3.3.0" > "$DIR/.ruby-version"
+touch "$DIR/config/application.rb"
+printf 'Rails.application.routes.draw do\n  get "/health", to: "health#show"\n  resources :invoices\nend\n' > "$DIR/config/routes.rb"
+printf 'class Invoice < ApplicationRecord\nend\n' > "$DIR/app/models/invoice.rb"
+printf 'class ApplicationRecord < ActiveRecord::Base\n  self.abstract_class = true\nend\n' > "$DIR/app/models/application_record.rb"
+printf 'class HealthController < ApplicationController\n  def show\n    @e = ENV["DATABASE_URL"]\n  end\nend\n' > "$DIR/app/controllers/health_controller.rb"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-stack.sh")
+assert_contains "11 stack: bundler"            "$OUT" '`bundler`'
+assert_contains "11 stack: ruby version"       "$OUT" '`3.3.0`'
+assert_contains "11 stack: gem rails"          "$OUT" "rails"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh")
+assert_contains "11 api: stack=ruby"           "$OUT" '`ruby`'
+assert_contains "11 api: GET /health"          "$OUT" "/health"
+assert_contains "11 api: RESTful resource"     "$OUT" "resources :invoices"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-data.sh")
+assert_contains "11 data: ActiveRecord"        "$OUT" "ActiveRecord"
+assert_contains "11 data: Invoice model"       "$OUT" '`Invoice`'
+assert_not_contains "11 data: ApplicationRecord excluded" "$OUT" '`ApplicationRecord`'
+OUT=$(bash "$DIR/scripts/llm-docs/gen-integrations.sh")
+assert_contains "11 integ: Sidekiq"            "$OUT" "Sidekiq"
+assert_contains "11 integ: env DATABASE_URL"   "$OUT" "DATABASE_URL"
+for g in gen-stack gen-api gen-data gen-integrations gen-map; do
+  assert_exits_ok "11 $g.sh exits 0 on Ruby repo" "$DIR/scripts/llm-docs/$g.sh"
+done
+cleanup "$DIR"
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Summary
 # ══════════════════════════════════════════════════════════════════════════════
 echo

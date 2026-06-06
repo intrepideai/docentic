@@ -3,10 +3,12 @@
 # The ONLY per-repo file in the research pipeline.
 # Everything else (scouts, researcher, librarian) is identical across the fleet.
 #
-# This is the SCAFFOLDED SKELETON. Run the Config Seeder agent (Prompt 2 from
-# ~/Desktop/Intrepide/ORCHESTRATOR-PROMPTS.md) to propose tailored topics, keywords,
-# and sources based on this repo's ARCHITECTURE.md and STACK.md. The seeder will
-# write its proposal to `research/config.proposed.yml` for human review.
+# This is the SCAFFOLDED SKELETON. Run the Config Seeder prompt
+# (prompts/config-seeder.md in the docentic repo:
+# https://github.com/intrepideai/docentic/blob/main/prompts/config-seeder.md) to
+# propose tailored topics, keywords, and sources based on this repo's
+# ARCHITECTURE.md and STACK.md. The seeder writes its proposal to
+# `research/config.proposed.yml` for human review.
 
 # What this repo cares about. Topics become folders under research/topics/.
 topics: []

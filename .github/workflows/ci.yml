@@ -29,6 +29,9 @@ jobs:
       - name: Typecheck + build
         run: npm run build
 
+      - name: Unit + CLI integration tests
+        run: npm test
+
       - name: Smoke test — dry run against a fresh repo
         run: |
           TESTDIR=$(mktemp -d)

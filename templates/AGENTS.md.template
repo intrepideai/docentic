@@ -63,4 +63,4 @@ _TODO: filled in by the Bootstrap agent (often from CODEOWNERS or similar)._
 
 ---
 
-**This file was scaffolded by `@intrepideai/docentic`. Content marked TODO will be filled in by the Bootstrap agent (Prompt 1 from `~/Desktop/Intrepide/ORCHESTRATOR-PROMPTS.md`).**
+**This file was scaffolded by `@intrepideai/docentic`. Content marked TODO will be filled in by the Bootstrap prompt ([`prompts/bootstrap.md`](https://github.com/intrepideai/docentic/blob/main/prompts/bootstrap.md)) — or run `docentic populate`.**

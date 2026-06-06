@@ -117,6 +117,18 @@ const SPINE_ONLY_SKIP_PATTERNS = [
   /^\.claude\//,
 ];
 
+// Single source of truth for "is this target dropped in the current mode?".
+// Used both when planning the file copy AND when building the index docs[]
+// array, so .agents/index.json never lists a file the mode didn't scaffold.
+function shouldSkipForMode(
+  targetRelPath: string,
+  opts: { minimal?: boolean; spineOnly?: boolean },
+): boolean {
+  if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
+  if (opts.spineOnly && SPINE_ONLY_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
+  return false;
+}
+
 function substitute(content: string, vars: Record<string, string>): string {
   let result = content;
   for (const [key, value] of Object.entries(vars)) {
@@ -125,7 +137,10 @@ function substitute(content: string, vars: Record<string, string>): string {
   return result;
 }
 
-function buildDocsArrayForIndex(stack: DetectedStack): string {
+function buildDocsArrayForIndex(
+  stack: DetectedStack,
+  opts: { minimal?: boolean; spineOnly?: boolean },
+): string {
   const docs: Array<Record<string, unknown>> = [
     { path: 'AGENTS.md', owner: 'human', edit_authority: ['human', 'ai'], merge_policy: 'review', critical: true, size_limit_lines: 200, hash: 'pending' },
     { path: 'docs/ARCHITECTURE.md', owner: 'human', edit_authority: ['human', 'ai'], merge_policy: 'review', critical: true, anchor: true, size_limit_lines: 500, hash: 'pending' },
@@ -152,7 +167,11 @@ function buildDocsArrayForIndex(stack: DetectedStack): string {
       hash: 'pending',
     });
   }
-  return JSON.stringify(docs, null, 2);
+  // Only list docs the current mode actually scaffolds, so `docentic check`
+  // (which treats index.json docs[] as the required set) passes for --minimal
+  // and --spine-only instead of demanding files that were intentionally skipped.
+  const included = docs.filter((d) => !shouldSkipForMode(String(d.path), opts));
+  return JSON.stringify(included, null, 2);
 }
 
 function ensureDir(path: string, dryRun: boolean, dirsCreated: string[]) {
@@ -213,7 +232,7 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
   const timestamp = new Date().toISOString();
   const date = timestamp.split('T')[0] ?? timestamp.slice(0, 10);
   const stackArr = JSON.stringify(stackLabels(opts.stack));
-  const docsArr = buildDocsArrayForIndex(opts.stack);
+  const docsArr = buildDocsArrayForIndex(opts.stack, opts);
   const vars: Record<string, string> = {
     REPO_NAME: opts.repoName,
     TIMESTAMP: timestamp,
@@ -222,38 +241,38 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
     DOCS_ARRAY: docsArr,
   };
 
-  // Decide which mode-based skip filter applies. --minimal and --spine-only
-  // both narrow the scaffold; --minimal is the stricter of the two.
-  const skipForMode = (targetRelPath: string): boolean => {
-    if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
-    if (opts.spineOnly && SPINE_ONLY_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
-    return false;
-  };
-
   // Build the full list of (template, target) pairs we plan to write so we
   // can pre-check against .gitignore. Any file the repo ignores would be
   // silently swallowed on commit — surface it loudly before scaffolding.
   const planned: Array<{ tmpl: string; target: string }> = [];
   for (const f of ALWAYS_FILES) {
-    if (skipForMode(f)) continue;
+    if (shouldSkipForMode(f, opts)) continue;
     planned.push({ tmpl: f, target: f });
   }
   for (const [tmpl, target] of Object.entries(TEMPLATED_FILES)) {
-    if (skipForMode(target)) continue;
+    if (shouldSkipForMode(target, opts)) continue;
     planned.push({ tmpl, target });
   }
   for (const [stackKey, file] of Object.entries(AUTO_DETECTED_TEMPLATES) as Array<[keyof DetectedStack, { tmpl: string; target: string }]>) {
     if (!opts.stack[stackKey]) continue;
-    if (skipForMode(file.target)) continue;
+    if (shouldSkipForMode(file.target, opts)) continue;
     planned.push({ tmpl: file.tmpl, target: file.target });
   }
 
   // Run gitignore check. Result is the subset of planned targets that the
-  // repo's .gitignore would drop on `git add`. If --force-ignored is set we
-  // still write them (caller can edit .gitignore after); otherwise we record
-  // them in result.filesGitignored and skip writing so the caller can warn.
+  // repo's .gitignore would drop on `git add`.
   const ignored = new Set(filterIgnored(opts.repoPath, planned.map((p) => p.target)));
   result.filesGitignored = Array.from(ignored).sort();
+
+  // Pre-flight hard-stop: if ANY planned file is gitignored and the user hasn't
+  // opted into --force-ignored, write NOTHING. Previously we wrote the
+  // non-ignored files and then reported "these were NOT written" — leaving a
+  // broken half-scaffold on disk. A real pre-flight means the repo is untouched
+  // until .gitignore is fixed (or --force-ignored is passed). Dry-run still
+  // proceeds so the caller can show the full would-create list + the warning.
+  if (!opts.dryRun && result.filesGitignored.length > 0 && !opts.forceIgnored) {
+    return result;
+  }
 
   for (const { tmpl, target } of planned) {
     if (ignored.has(target) && !opts.forceIgnored) {

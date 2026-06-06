@@ -30,7 +30,7 @@ Intrepide maintains many repos. Each historically had ad-hoc documentation that 
 
 ### Decision
 
-Adopt the standardized LLM-friendly docs template (see `~/Desktop/Intrepide/LLM-DOCS-TEMPLATE-SPEC.md`):
+Adopt the standardized agent-friendly docs template (see [docentic](https://github.com/intrepideai/docentic)):
 
 - Root `AGENTS.md` as the universal entry point
 - `docs/` spine: ARCHITECTURE, STACK, DATA, API, MAP, OPS, CONVENTIONS, GLOSSARY, INTEGRATIONS, SECURITY-NOTES, DECISIONS, HISTORY

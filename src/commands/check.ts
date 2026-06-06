@@ -32,21 +32,26 @@ interface CheckReport {
   };
 }
 
-const REQUIRED_SPINE = [
-  'AGENTS.md',
-  'docs/ARCHITECTURE.md',
-  'docs/STACK.md',
-  'docs/DATA.md',
-  'docs/API.md',
-  'docs/MAP.md',
-  'docs/INTEGRATIONS.md',
-  'docs/OPS.md',
-  'docs/CONVENTIONS.md',
-  'docs/GLOSSARY.md',
-  'docs/SECURITY-NOTES.md',
-  'docs/DECISIONS.md',
-  'docs/HISTORY.md',
-];
+// The only files EVERY docentic repo must have, regardless of scaffold mode
+// (--minimal / --spine-only). The rest of the required set is derived from the
+// repo's own .agents/index.json docs[] — that's the source of truth for what
+// was scaffolded, so a --minimal repo isn't failed for "missing" files it was
+// never meant to have.
+const HARD_CORE = ['AGENTS.md', 'docs/ARCHITECTURE.md'];
+
+// Compute the set of files that must exist on disk: the hard core plus every
+// path the index lists in docs[]. Deduplicated, order-stable.
+function requiredFiles(raw: unknown): string[] {
+  const fromIndex: string[] = [];
+  const docs = (raw as { docs?: unknown }).docs;
+  if (Array.isArray(docs)) {
+    for (const d of docs) {
+      const p = (d as { path?: unknown }).path;
+      if (typeof p === 'string' && p.length > 0) fromIndex.push(p);
+    }
+  }
+  return Array.from(new Set([...HARD_CORE, ...fromIndex]));
+}
 
 export async function checkCommand(opts: CheckOptions): Promise<number> {
   const repoPath = resolve(opts.path ?? process.cwd());
@@ -58,7 +63,7 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
         ok: false,
         errors: [{ severity: 'error', path: '.agents/index.json', message: 'not found — is this a docentic-scaffolded repo? run `docentic init` first' }],
         warnings: [],
-        summary: { files_checked: 0, spine_files_present: 0, spine_files_missing: REQUIRED_SPINE },
+        summary: { files_checked: 0, spine_files_present: 0, spine_files_missing: HARD_CORE },
       }, null, 2));
     } else {
       log.error(`Not a docentic-scaffolded repo: ${repoPath}`);
@@ -77,7 +82,7 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
         ok: false,
         errors: [{ severity: 'error', path: '.agents/index.json', message: `invalid JSON: ${(err as Error).message}` }],
         warnings: [],
-        summary: { files_checked: 1, spine_files_present: 0, spine_files_missing: REQUIRED_SPINE },
+        summary: { files_checked: 1, spine_files_present: 0, spine_files_missing: HARD_CORE },
       }, null, 2));
     } else {
       log.error(`.agents/index.json is not valid JSON`);
@@ -88,41 +93,31 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
 
   const indexIssues = validateAgentsIndex(raw);
 
-  // 2. Check spine files exist
+  // 2. Check that every required file exists. The required set = the hard core
+  // + everything the index's docs[] lists. Each file is checked ONCE, so a
+  // missing file is reported a single time with a clean path (no more
+  // double-reporting or malformed `docs[].<path>` keys).
+  const required = requiredFiles(raw);
   const spineMissing: string[] = [];
   const spinePresent: string[] = [];
-  for (const f of REQUIRED_SPINE) {
+  const fileIssues: ValidationIssue[] = [];
+  for (const f of required) {
     if (existsSync(join(repoPath, f))) {
       spinePresent.push(f);
     } else {
       spineMissing.push(f);
+      fileIssues.push({
+        severity: 'error',
+        path: f,
+        message: HARD_CORE.includes(f)
+          ? `required core file missing — every docentic-scaffolded repo must have this`
+          : `listed in .agents/index.json but not found on disk`,
+      });
     }
   }
 
-  // Synthesize "spine file missing" as errors
-  const spineIssues: ValidationIssue[] = spineMissing.map((f) => ({
-    severity: 'error' as const,
-    path: f,
-    message: `spine file missing — every docentic-scaffolded repo must have this`,
-  }));
-
-  // 3. Check that every file listed in docs[] actually exists
-  const fileExistsIssues: ValidationIssue[] = [];
-  if (Array.isArray((raw as Record<string, unknown>).docs)) {
-    const docs = (raw as { docs: Array<{ path?: unknown }> }).docs;
-    for (const d of docs) {
-      if (typeof d?.path === 'string' && !existsSync(join(repoPath, d.path))) {
-        fileExistsIssues.push({
-          severity: 'error',
-          path: `docs[].${d.path}`,
-          message: `listed in index.json but not found on disk`,
-        });
-      }
-    }
-  }
-
-  // 4. Aggregate
-  const allIssues = [...indexIssues, ...spineIssues, ...fileExistsIssues];
+  // 3. Aggregate
+  const allIssues = [...indexIssues, ...fileIssues];
   const errors = allIssues.filter((i) => i.severity === 'error');
   const warnings = allIssues.filter((i) => i.severity === 'warning');
 
@@ -145,10 +140,10 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
     log.dim(`  repo: ${repoPath}`);
     log.blank();
 
-    if (report.summary.spine_files_present === REQUIRED_SPINE.length) {
-      log.success(`All ${REQUIRED_SPINE.length} spine files present`);
+    if (spineMissing.length === 0) {
+      log.success(`All ${required.length} required files present`);
     } else {
-      log.warn(`${report.summary.spine_files_present}/${REQUIRED_SPINE.length} spine files present`);
+      log.warn(`${report.summary.spine_files_present}/${required.length} required files present`);
     }
 
     if (errors.length === 0 && warnings.length === 0) {

@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.3] — 2026-06-05
+
+Safety, git-correctness, and contract-hardening release. No behavior change on
+the happy path; closes a secret-leak, a shell-injection vector, and a class of
+self-inflicted `docentic check` failures.
+
+### Security
+- **`docentic populate` can no longer commit your `.env` (live API key).** `init` now adds `.env` (and `.env.local`, `.env.*.local`) to `.gitignore`, and both `init` and `populate` stage only the files they actually wrote instead of `git add -A` — so an un-ignored secret can never be swept into the scaffold commit.
+- **Shell-injection / quoting bugs removed from all git + gh helpers.** Every invocation now uses `execFileSync` with an argv array; a value like `--branch 'x$(rm -rf .)'` is passed as one literal argument and never reaches a shell.
+
+### Fixed
+- **`--minimal` and `--spine-only` no longer fail `docentic check`.** `.agents/index.json` now lists only the docs the chosen mode actually scaffolds, and `check` derives its required-file set from the index (plus a tiny hard core: `AGENTS.md`, `docs/ARCHITECTURE.md`) instead of a hardcoded list of 13.
+- **`docentic check` no longer double-reports a missing file** or emits malformed `docs[].<path>` error keys.
+- **`validate-index.ts` is now at parity with the published JSON schema** — it rejects unknown top-level/`docs[]` keys (`additionalProperties: false`) and validates `template_version` as semver, so `check` no longer green-lights index files that `ajv` would reject.
+- **No more crash on an unborn repo.** Running `docentic init` right after `git init` (no commits yet) used to abort with `fatal: ambiguous argument 'HEAD'`; it now creates the first commit cleanly.
+- **Gitignore conflicts are a true pre-flight.** When a scaffolded path would be `.gitignore`d, `init` now writes *nothing* (previously it wrote ~53 of 54 files and then reported "these were NOT written").
+- **Failed runs no longer strand the repo on an empty `docentic/template-scaffold` branch** — the branch is created only at commit time.
+- **PRs target the repo's real default branch.** `gh pr create` no longer hardcodes `--base main`, so it works on `master`/`develop`/`trunk` repos; the branch-creation message reports the actual base instead of always saying "main".
+- **The default `populate` model is actually `claude-sonnet-4-6` now** in code (`populate.ts` + `cli.ts`), not just in the README — the `0.2.2` changelog claimed this fix but it had only been applied to the docs.
+
+### Added
+- **Real `npm test`.** Added a `node:test` CLI integration suite (`test/cli.test.js`) covering every fix above; `npm test` previously matched zero files and exited green. Wired into CI.
+- Centralized model IDs in `src/lib/models.ts` so the documented default can't drift from the code default again.
+
 ## [0.2.2] — 2026-06-02
 
 Makes the `scripts/llm-docs/` generators stack-agnostic across the JS/TS

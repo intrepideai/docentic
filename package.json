@@ -1,7 +1,7 @@
 {
   "name": "@intrepideai/docentic",
-  "version": "0.2.3",
-  "description": "Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.",
+  "version": "0.3.0",
+  "description": "Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo — deterministic generators for JS/TS, Python, Go, Ruby & PHP.",
   "type": "module",
   "bin": {
     "docentic": "dist/cli.js"

@@ -318,22 +318,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: intrepideai/docentic@main
+      - uses: intrepideai/docentic@v0.3.0   # pin a tag (recommended)
 ```
 
 Inputs (all optional):
 
 ```yaml
-- uses: intrepideai/docentic@main
+- uses: intrepideai/docentic@v0.3.0
   with:
     path: '.'                              # repo path to check (default: workspace root)
     warnings-as-errors: 'true'             # fail on warnings too (default: false)
     json: 'false'                          # output JSON for piping (default: false)
     node-version: '20'                     # Node version to install (default: 20, min 20)
-    version: '@intrepideai/docentic@0.2.0' # pin a specific npm version (default: latest)
+    version: '@intrepideai/docentic@0.3.0' # pin a specific npm version (default: latest)
 ```
 
-Pin to a tag for stability (e.g. `intrepideai/docentic@v0.2.0`) or pin the npm `version:` input — both work. `@main` tracks the latest unreleased commit.
+**Pin to a tag** (e.g. `intrepideai/docentic@v0.3.0`) for reproducible CI — recommended. You can also pin the npm `version:` input. `@main` tracks the latest unreleased commit (use only if you want the bleeding edge).
 
 Outputs:
 

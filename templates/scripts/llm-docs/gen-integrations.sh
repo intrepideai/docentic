@@ -14,7 +14,21 @@ cd "$REPO_ROOT"
 # shellcheck source=scripts/llm-docs/detect-stack.sh
 source "$(dirname "$0")/detect-stack.sh"
 
+# Per-language adapter (provides lang_services / lang_env_names).
+_LANG_ADAPTER="$(dirname "$0")/lang/${LANGUAGE:-unknown}.sh"
+# shellcheck source=/dev/null
+[ -f "$_LANG_ADAPTER" ] && source "$_LANG_ADAPTER"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Source-of-truth link — use the detected manifest (package.json, pyproject.toml,
+# go.mod, …) and only link it if it actually exists, so non-Node repos don't get
+# a dead `package.json` link.
+if [ -n "${MANIFEST:-}" ] && [ -f "$MANIFEST" ]; then
+  SOT_LINK="[\`$MANIFEST\`](../$MANIFEST), env vars in [OPS.md](./OPS.md)"
+else
+  SOT_LINK="dependency manifest + env vars in [OPS.md](./OPS.md)"
+fi
 
 # Helper: check if a dep is present; prints "true" or "false" for use in [ ] tests
 has_dep() {
@@ -41,7 +55,7 @@ generated_hash: pending
 
 > **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
 > **Purpose:** Third-party services and SDKs in use, plus feature flag inventory.
-> **Source of truth:** [\`$APP_PKG\`](../$APP_PKG), env vars in [OPS.md](./OPS.md)
+> **Source of truth:** $SOT_LINK
 
 ## Detected services
 
@@ -88,14 +102,30 @@ EOF
 # Data fetching / state
 [ "$(has_dep '@tanstack/react-query')" = "true" ]       && echo "| **TanStack Query** | active | — | \`@tanstack/react-query\` |"
 
+# Language adapter services (Python/Go/Ruby/PHP — detected from their manifests)
+type lang_services >/dev/null 2>&1 && lang_services
+
 cat <<EOF
 
 ## Env vars referenced
 
 EOF
 
-# Scan detected source dirs for process.env.* references
-if command -v rg >/dev/null 2>&1 && [ -n "${SRC_DIRS:-}" ]; then
+# Language adapter env-var scan (os.environ / os.Getenv / ENV[] / getenv …).
+if type lang_env_names >/dev/null 2>&1; then
+  ENV_VARS="$(lang_env_names)"
+  if [ -n "$ENV_VARS" ]; then
+    echo "Found in source files (\`${SRC_DIRS:-.}\`):"
+    echo
+    while IFS= read -r v; do
+      [ -n "$v" ] && echo "- \`$v\`"
+    done <<< "$ENV_VARS"
+  else
+    echo "_No environment variables referenced under \`${SRC_DIRS:-.}\`._"
+  fi
+
+# Scan detected source dirs for process.env.* references (JS/TS)
+elif command -v rg >/dev/null 2>&1 && [ -n "${SRC_DIRS:-}" ]; then
   # shellcheck disable=SC2086
   ENV_VARS=$(rg --no-filename -oI 'process\.env\.[A-Z_]+' $SRC_DIRS --type ts 2>/dev/null \
     | sed 's/process\.env\.//' | sort -u | head -40 || true)

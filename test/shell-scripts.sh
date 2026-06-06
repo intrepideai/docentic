@@ -41,8 +41,9 @@ assert_exits_ok() {
 
 make_fixture() {
   local dir; dir=$(mktemp -d)
-  mkdir -p "$dir/scripts/llm-docs" "$dir/docs"
+  mkdir -p "$dir/scripts/llm-docs/lang" "$dir/docs"
   cp "$SCRIPTS_DIR"/*.sh "$dir/scripts/llm-docs/"
+  cp "$SCRIPTS_DIR"/lang/*.sh "$dir/scripts/llm-docs/lang/" 2>/dev/null || true
   echo "$dir"
 }
 
@@ -616,6 +617,66 @@ printf '# readme\n' > "$DIR/README.md"
 OUT=$(run_detect "$DIR")
 assert_eq       "8d LANGUAGE=unknown"        "$(get_var "$OUT" LANGUAGE)" "unknown"
 assert_eq       "8d PACKAGE_MANAGER empty"   "$(get_var "$OUT" PACKAGE_MANAGER)" ""
+cleanup "$DIR"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SUITE 9 — Python language adapter (lang/python.sh) drives the generators
+echo
+echo "━━━ Suite 9: Python adapter (gen-* on a Python repo) ━━━"
+echo
+
+# ── 9a: FastAPI + SQLAlchemy ─────────────────────────────────────────────────
+DIR=$(make_fixture)
+printf '[tool.poetry]\nname = "acme-api"\nversion = "1.4.0"\nrequires-python = ">=3.11"\n[tool.poetry.dependencies]\nfastapi = "^0.110"\nsqlalchemy = "^2.0"\nstripe = "^9.0"\n' > "$DIR/pyproject.toml"
+mkdir -p "$DIR/app"
+printf 'import os\nfrom fastapi import FastAPI\napp = FastAPI()\nDB = os.environ["DATABASE_URL"]\nK = os.getenv("STRIPE_SECRET_KEY")\n@app.get("/users")\ndef l(): ...\n@app.post("/users")\ndef c(): ...\n' > "$DIR/app/main.py"
+printf 'from sqlalchemy.orm import DeclarativeBase\nclass Base(DeclarativeBase): ...\nclass User(Base):\n    __tablename__ = "users"\nclass Order(Base):\n    __tablename__ = "orders"\n' > "$DIR/app/models.py"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-stack.sh")
+assert_contains "9a stack: real name"          "$OUT" "acme-api"
+assert_contains "9a stack: package manager pip" "$OUT" '`pip`'
+assert_contains "9a stack: dependency fastapi"  "$OUT" "fastapi"
+assert_not_contains "9a stack: no dead package.json link" "$OUT" "package.json"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh")
+assert_contains "9a api: stack=python header"  "$OUT" '`python`'
+assert_contains "9a api: GET /users"           "$OUT" "GET"
+assert_contains "9a api: path /users"          "$OUT" "/users"
+assert_contains "9a api: file link"            "$OUT" "app/main.py"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-data.sh")
+assert_contains "9a data: SQLAlchemy"          "$OUT" "SQLAlchemy"
+assert_contains "9a data: User model"          "$OUT" '`User`'
+assert_not_contains "9a data: Base class excluded" "$OUT" '| `Base` |'
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-integrations.sh")
+assert_contains "9a integ: Stripe service"     "$OUT" "Stripe"
+assert_contains "9a integ: env DATABASE_URL"   "$OUT" "DATABASE_URL"
+assert_contains "9a integ: env STRIPE_SECRET_KEY" "$OUT" "STRIPE_SECRET_KEY"
+cleanup "$DIR"
+
+# ── 9b: Django (URLConf + models, requirements.txt) ──────────────────────────
+DIR=$(make_fixture)
+printf 'Django>=5.0\npsycopg2-binary>=2.9\n' > "$DIR/requirements.txt"
+mkdir -p "$DIR/app"
+printf 'from django.urls import path\nfrom . import views\nurlpatterns = [\n    path("articles/", views.index),\n    path("articles/<int:id>/", views.detail),\n]\n' > "$DIR/app/urls.py"
+printf 'from django.db import models\nclass Article(models.Model):\n    title = models.CharField(max_length=200)\n' > "$DIR/app/models.py"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh")
+assert_contains "9b api: Django URLConf"       "$OUT" "Django URLConf"
+assert_contains "9b api: articles route"       "$OUT" "/articles/"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-data.sh")
+assert_contains "9b data: Django ORM"          "$OUT" "Django ORM"
+assert_contains "9b data: Article model"       "$OUT" '`Article`'
+cleanup "$DIR"
+
+# ── 9c: generators still exit 0 on a Python repo (set -e safety) ──────────────
+DIR=$(make_fixture)
+printf '[project]\nname = "svc"\n' > "$DIR/pyproject.toml"
+mkdir -p "$DIR/src"; printf 'x = 1\n' > "$DIR/src/app.py"
+for g in gen-stack gen-api gen-data gen-integrations gen-map; do
+  assert_exits_ok "9c $g.sh exits 0 on Python repo" "$DIR/scripts/llm-docs/$g.sh"
+done
 cleanup "$DIR"
 
 # ══════════════════════════════════════════════════════════════════════════════

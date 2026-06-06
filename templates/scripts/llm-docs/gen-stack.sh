@@ -14,7 +14,51 @@ cd "$REPO_ROOT"
 # shellcheck source=scripts/llm-docs/detect-stack.sh
 source "$(dirname "$0")/detect-stack.sh"
 
+# Remember detect-stack's language-aware package manager before the JS path
+# below overwrites PACKAGE_MANAGER from package.json's corepack field.
+DETECT_PM="${PACKAGE_MANAGER:-}"
+
+# Per-language adapter (provides lang_stack for Python/Go/Ruby/PHP).
+_LANG_ADAPTER="$(dirname "$0")/lang/${LANGUAGE:-unknown}.sh"
+# shellcheck source=/dev/null
+[ -f "$_LANG_ADAPTER" ] && source "$_LANG_ADAPTER"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# ---- Non-JS path: emit frontmatter, delegate the body to the language
+# adapter, and exit. The JS/TS logic below is left completely untouched. ----
+if [ "${LANGUAGE:-unknown}" != "js-ts" ] && type lang_stack >/dev/null 2>&1; then
+  cat <<EOF
+---
+owner: generator
+edit_authority: [generator, human]
+merge_policy: auto
+source: scripts/llm-docs/gen-stack.sh
+updated: $NOW
+hash: pending
+generated_hash: pending
+---
+
+<!-- AUTO-GENERATED — edit will be overwritten on next sync. See: scripts/llm-docs/gen-stack.sh -->
+
+# Stack
+
+> **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
+> **Purpose:** Tech stack and runtime versions for this repo.
+EOF
+  lang_stack
+  cat <<EOF
+
+---
+
+## See also
+
+- [↑ ARCHITECTURE.md](./ARCHITECTURE.md) — system anchor
+- [INTEGRATIONS.md](./INTEGRATIONS.md) — third-party services
+- [OPS.md](./OPS.md) — runtime config & deploy
+EOF
+  exit 0
+fi
 
 # Helper: extract a field from a package.json
 pkg_field() {
@@ -27,6 +71,9 @@ ROOT_VERSION=$(pkg_field package.json '.version')
 NODE_ENGINE=$(pkg_field package.json '.engines.node')
 PNPM_ENGINE=$(pkg_field package.json '.engines.pnpm')
 PACKAGE_MANAGER=$(pkg_field package.json '.packageManager')
+# Fall back to the lockfile-derived manager (npm/pnpm/yarn/bun) when the
+# corepack `.packageManager` field is absent — otherwise the row renders blank.
+[ -z "$PACKAGE_MANAGER" ] && PACKAGE_MANAGER="$DETECT_PM"
 
 # --- Workspace packages ---
 WORKSPACE_PACKAGES=()

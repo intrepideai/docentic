@@ -16,10 +16,22 @@ cd "$REPO_ROOT"
 # shellcheck source=scripts/llm-docs/detect-stack.sh
 source "$(dirname "$0")/detect-stack.sh"
 
+# Load the per-language adapter (Python/Go/Ruby/PHP) if one ships for this
+# LANGUAGE. JS/TS stays inline below; adapters provide lang_api / lang_data / …
+_LANG_ADAPTER="$(dirname "$0")/lang/${LANGUAGE:-unknown}.sh"
+# shellcheck source=/dev/null
+[ -f "$_LANG_ADAPTER" ] && source "$_LANG_ADAPTER"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Fallback API_DIR label for the header
+# Header labels — adapt to the detected language when there's no JS STACK_TYPE.
 DISPLAY_DIR="${API_DIR:-<none detected>}"
+STACK_LABEL="$STACK_TYPE"
+SOT="route handlers under [\`$DISPLAY_DIR/\`](../$DISPLAY_DIR/)"
+if [ "$STACK_TYPE" = "unknown" ] && [ "${LANGUAGE:-unknown}" != "unknown" ]; then
+  STACK_LABEL="$LANGUAGE"
+  SOT="route handlers under \`${SRC_DIRS:-.}\`"
+fi
 
 cat <<EOF
 ---
@@ -38,8 +50,8 @@ generated_hash: pending
 
 > **Anchor:** [↑ ARCHITECTURE.md](./ARCHITECTURE.md) · [← AGENTS.md](../AGENTS.md)
 > **Purpose:** Inventory of HTTP endpoints exposed by this repo.
-> **Source of truth:** route handlers under [\`$DISPLAY_DIR/\`](../$DISPLAY_DIR/)
-> **Stack:** \`$STACK_TYPE\`
+> **Source of truth:** $SOT
+> **Stack:** \`$STACK_LABEL\`
 
 ## Endpoint inventory
 
@@ -131,9 +143,13 @@ elif [ "$STACK_TYPE" = "hono" ] && [ -n "${API_DIR:-}" ] && [ -d "$API_DIR" ]; t
       done; } || true
   echo
 
+# ---- Language adapter (Python/Go/Ruby/PHP) ----
+elif type lang_api >/dev/null 2>&1; then
+  lang_api
+
 # ---- Unknown / no API dir ----
 else
-  echo "_No API routes found. Stack detected as \`$STACK_TYPE\`; searched \`${API_DIR:-<no dir detected>}\`._"
+  echo "_No API routes found. Stack detected as \`$STACK_LABEL\`; searched \`${API_DIR:-<no dir detected>}\`._"
   echo
   echo "_Once routes are added, re-run \`gen-api.sh\` to populate this file._"
 fi

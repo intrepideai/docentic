@@ -14,6 +14,11 @@ cd "$REPO_ROOT"
 # shellcheck source=scripts/llm-docs/detect-stack.sh
 source "$(dirname "$0")/detect-stack.sh"
 
+# Per-language adapter (provides lang_data for Python/Go/Ruby/PHP).
+_LANG_ADAPTER="$(dirname "$0")/lang/${LANGUAGE:-unknown}.sh"
+# shellcheck source=/dev/null
+[ -f "$_LANG_ADAPTER" ] && source "$_LANG_ADAPTER"
+
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Drizzle helpers (best-effort — works for standard pgTable / mysqlTable calls)
@@ -100,6 +105,12 @@ EOF
   else
     echo "| _(could not parse tables — check schema format)_ | |"
   fi
+
+# ---- Language adapter (Python/Go/Ruby/PHP) ----
+elif type lang_data >/dev/null 2>&1; then
+  echo
+  lang_data
+  echo
 
 # ---- No ORM branch ----
 else

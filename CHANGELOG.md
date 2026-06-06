@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Polyglot detection foundation** (toward stack-agnostic generators). `detect-stack.sh` now exports a primary `LANGUAGE` (`js-ts` · `python` · `go` · `rust` · `ruby` · `php` · `java` · `unknown`) and the resolved `MANIFEST` path, and picks a language-appropriate `PACKAGE_MANAGER` (pip/poetry/uv/pipenv · go · cargo · bundler · composer · maven/gradle) instead of defaulting everything to `npm`. The per-language generator adapters in the next release build on this.
+- `SRC_DIRS` is now language-aware and comprehensive — it includes `lib/` (where Next.js apps keep their Prisma/Stripe/email singletons, previously missed by the env-var scan) and the right roots for non-JS stacks (`cmd/`, `internal/`, `pkg/`, `alembic/`, …).
+- Go web-framework (`gin`/`echo`/`chi`/`fiber`) and DB (`gorm`/`ent`/`pgx`/`sqlx`) detection in the TypeScript stack detector.
+
+### Fixed
+- `*.xcodeproj` detection in the stack detector was dead code (`existsSync` doesn't expand globs); it now matches real directory entries by suffix.
+- `docentic populate`'s context-gatherer no longer skips nested monorepo schemas — the `apps/*/prisma/schema.prisma` glob is actually expanded (it was previously `continue`-d past), and Drizzle default layouts are gathered too.
+- `populate` now includes monorepo app manifests (`apps/*/package.json`), so the LLM sees the app's real dependencies instead of only an empty root workspace manifest.
+
 ## [0.2.3] — 2026-06-05
 
 Safety, git-correctness, and contract-hardening release. No behavior change on

@@ -79,33 +79,81 @@ function buildTree(root: string, depth = 2): string {
 
 function findManifest(root: string): { path: string; content: string } | null {
   const candidates = ['package.json', 'pyproject.toml', 'setup.py', 'requirements.txt', 'go.mod', 'Cargo.toml', 'Gemfile', 'pom.xml', 'build.gradle'];
+  let primary: { path: string; content: string } | null = null;
   for (const c of candidates) {
     const p = join(root, c);
     if (exists(p)) {
       const content = tryRead(p);
-      if (content) return { path: c, content };
+      if (content) { primary = { path: c, content }; break; }
     }
   }
-  return null;
+  if (!primary) return null;
+
+  // In a monorepo the root manifest usually lacks the app's real dependencies
+  // (they live in apps/*/package.json). Append those so `populate`'s LLM sees
+  // the actual stack instead of an empty root workspace manifest.
+  const extra: string[] = [];
+  for (const parent of ['apps', 'packages']) {
+    let names: string[];
+    try { names = readdirSync(join(root, parent)).sort(); } catch { continue; }
+    for (const name of names) {
+      if (name.startsWith('.')) continue;
+      const rel = `${parent}/${name}/package.json`;
+      const content = exists(join(root, rel)) ? tryRead(join(root, rel)) : null;
+      if (content) extra.push(`\n\n# ${rel}\n${content}`);
+      if (extra.length >= 6) break;
+    }
+    if (extra.length >= 6) break;
+  }
+  return { path: primary.path, content: primary.content + extra.join('') };
+}
+
+// Expand a pattern containing a single `*` directory segment (e.g.
+// `apps/*/prisma/schema.prisma`) into the concrete paths that exist one level
+// under the starred dir. Returns relative paths.
+function expandStar(root: string, pattern: string): string[] {
+  const star = pattern.indexOf('*');
+  if (star === -1) return [pattern];
+  const before = pattern.slice(0, star).replace(/\/$/, ''); // "apps"
+  const after = pattern.slice(star + 1).replace(/^\//, ''); // "prisma/schema.prisma"
+  let names: string[];
+  try {
+    names = readdirSync(join(root, before));
+  } catch {
+    return [];
+  }
+  return names
+    .filter((n) => !n.startsWith('.'))
+    .map((n) => [before, n, after].filter(Boolean).join('/'));
 }
 
 function findSchemas(root: string): Array<{ path: string; content: string }> {
-  const candidates = [
+  const patterns = [
+    // Prisma (root + monorepo apps/packages) — the `*` ones were previously
+    // skipped entirely, so nested schemas never reached the LLM.
     'prisma/schema.prisma',
     'apps/*/prisma/schema.prisma',
-    'db/schema.rb',
-    'alembic.ini',
+    'packages/*/prisma/schema.prisma',
+    // Drizzle default layouts
+    'src/db/schema.ts', 'db/schema.ts', 'shared/schema.ts', 'server/schema.ts',
+    // Other ecosystems
+    'db/schema.rb', 'alembic.ini',
     'openapi.yaml', 'openapi.yml', 'openapi.json',
     'swagger.yaml', 'swagger.yml', 'swagger.json',
   ];
   const out: Array<{ path: string; content: string }> = [];
-  for (const c of candidates) {
-    // For glob-like, just try direct paths
-    if (c.includes('*')) continue;
-    const p = join(root, c);
-    if (exists(p)) {
-      const content = tryRead(p);
-      if (content) out.push({ path: c, content });
+  const seen = new Set<string>();
+  for (const pat of patterns) {
+    const rels = pat.includes('*') ? expandStar(root, pat) : [pat];
+    for (const rel of rels) {
+      if (seen.has(rel)) continue;
+      seen.add(rel);
+      const p = join(root, rel);
+      if (exists(p)) {
+        const content = tryRead(p);
+        if (content) out.push({ path: rel, content });
+      }
+      if (out.length >= 8) return out;
     }
   }
   return out;

@@ -103,10 +103,10 @@ Validates manual files for staleness against code reality:
 
 | Check | Behavior on failure |
 |---|---|
-| Every endpoint in `docs/API.md` exists in `apps/docs/app/api/**/route.ts` | Append to `research/_meta/SUGGESTIONS.md` — never edit API.md directly |
-| Every env var in `docs/OPS.md` referenced somewhere in `apps/docs/` | Append to SUGGESTIONS.md |
+| Every endpoint in `docs/API.md` exists in the repo's route handlers (the dirs `gen-api.sh` scans) | Append to `research/_meta/SUGGESTIONS.md` — never edit API.md directly |
+| Every env var in `docs/OPS.md` referenced somewhere under the source dirs (`detect-stack.sh` `SRC_DIRS`) | Append to SUGGESTIONS.md |
 | Every internal link in any doc resolves to a real file | Append to SUGGESTIONS.md |
-| Every dependency mentioned in `docs/INTEGRATIONS.md` exists in `package.json` | Append to SUGGESTIONS.md |
+| Every dependency mentioned in `docs/INTEGRATIONS.md` exists in the manifest (`package.json` / `pyproject.toml` / `go.mod` / `Gemfile` / `composer.json`) | Append to SUGGESTIONS.md |
 | File size soft-limit not exceeded (AGENTS.md ≤ 200, others ≤ 500 lines) | Append warning to SUGGESTIONS.md |
 | Hash field in index.json matches file content | Update hash in index.json |
 

@@ -212,21 +212,21 @@ export async function initCommand(opts: InitOptions): Promise<number> {
   log.step('Opening PR…');
   try {
     push(repoPath, branchName);
-    // Try to ensure the `llm-docs` label exists. If we can't create it
+    // Try to ensure the `docentic` label exists. If we can't create it
     // (no repo write perms, or the GH token can't write labels), open the PR
     // without the label rather than crashing the whole flow.
-    const labelOk = ensureLabel(repoPath, 'llm-docs', {
+    const labelOk = ensureLabel(repoPath, 'docentic', {
       color: '7c3aed',
       description: 'Scaffolded by docentic — agent-friendly documentation',
     });
     if (!labelOk) {
-      log.warn(`Could not ensure 'llm-docs' label on this repo — opening PR without it.`);
+      log.warn(`Could not ensure 'docentic' label on this repo — opening PR without it.`);
       log.dim(`  (gh CLI may lack write perms, or the repo blocks label create)`);
     }
     const url = openPR(repoPath, {
       title: 'chore: bootstrap docentic template',
       body: prBody(repoName, stack, autoDocs, result.filesCreated.length),
-      ...(labelOk ? { label: 'llm-docs' } : {}),
+      ...(labelOk ? { label: 'docentic' } : {}),
     });
     log.success(`PR opened: ${url}`);
   } catch (err) {
@@ -247,7 +247,7 @@ function nextSteps(opts: InitOptions): void {
   log.dim(`         Codex CLI, Gemini CLI…), paste prompts/bootstrap.md from the docentic repo`);
   log.dim(`       → or 'docentic populate' (uses ANTHROPIC_API_KEY from .env)`);
   log.dim(`  3. Propose research topics with prompts/config-seeder.md`);
-  log.dim(`  4. Merge, then schedule the 7 maintenance prompts (see prompts/ folder)`);
+  log.dim(`  4. Merge, then schedule the daily maintenance loop (scripts/llm-docs/MAINTAIN.md)`);
   log.blank();
   log.dim(`  Tip: 'docentic init' is safe to re-run — existing files are skipped`);
   log.dim(`       unless --force is passed. Use it to pick up template updates.`);

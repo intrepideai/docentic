@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Multi-provider `populate`** — real OpenAI and Google Gemini support alongside Anthropic, behind a small provider abstraction (`src/lib/llm/`). The provider is chosen by `DOCENT_PROVIDER`, else the first key present (`ANTHROPIC_API_KEY` → `OPENAI_API_KEY` → `GEMINI_API_KEY`). OpenAI uses Chat Completions + function calling (honors `OPENAI_MODEL` / `OPENAI_BASE_URL`); Gemini uses `generateContent` + function calling (honors `GEMINI_MODEL`). Covered by mocked-transport unit tests for all three.
 
 ### Changed
+- **Honest, layered scope copy.** README tagline + body now state the real scope: scaffold/detection/LLM-fill on any repo; deterministic generators for JS/TS, Python, Go, Ruby, and PHP. Corrected the stale "two smoke tests" CI claim, the GLOSSARY spine count (12 core docs in `docs/` + root `AGENTS.md`, not "13 in docs/"), and the PR label mismatch (`init` now uses the `docentic` label, matching `populate`).
+- `.agents/index.json` `template_version` is now stamped with docentic's real version (was hardcoded `0.1.0`).
+- `init`'s "next steps" points at the real maintenance entry point (`scripts/llm-docs/MAINTAIN.md`) instead of "7 prompts (see prompts/)"; `MAINTAIN.md` Step 3 no longer hardcodes docentic's own `apps/docs/` layout.
+- `install --project` now warns it's Cursor-only instead of silently ignoring it for Claude.
 - `populate` cost estimates are now **per-model** (`src/lib/pricing.ts`) instead of always Sonnet-priced, and `--max-cost` / `DOCENT_MAX_COST_USD` gate against the right figure.
 - `.env.example` rewritten to reflect what the code actually reads (real providers, valid model ids, `DOCENT_PROVIDER`, `DOCENT_MODEL_BOOTSTRAP`, `DOCENT_MAX_COST_USD`) and drops the false "coming soon — scaffold-only" note and the dead env vars.
 

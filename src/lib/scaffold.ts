@@ -35,6 +35,7 @@ const ALWAYS_FILES = [
   'scripts/llm-docs/MAINTAIN.md',
   'scripts/llm-docs/detect-stack.sh',
   'scripts/llm-docs/lang/python.sh',
+  'scripts/llm-docs/lang/go.sh',
   'scripts/llm-docs/gen-stack.sh',
   'scripts/llm-docs/gen-data.sh',
   'scripts/llm-docs/gen-api.sh',

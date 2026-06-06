@@ -30,8 +30,8 @@
     "notes": [
       "Initial scaffold — generator hashes are 'pending' until first maintenance run",
       "Hash values across all docs will be backfilled by validate.sh on first run",
-      "Run Bootstrap agent (Prompt 1) to populate AGENTS.md + docs/* content",
-      "Run Config Seeder agent (Prompt 2) to propose research/config.yml topics"
+      "Run the Bootstrap prompt (prompts/bootstrap.md) or `docentic populate` to fill AGENTS.md + docs/* content",
+      "Run the Config Seeder prompt (prompts/config-seeder.md) to propose research/config.yml topics"
     ]
   }
 }

@@ -16,21 +16,25 @@ import { gatherContext, formatContextForPrompt } from '../lib/repo-context.js';
 import { log } from '../lib/log.js';
 import {
   isGitRepo,
+  hasCommits,
   hasUncommittedChanges,
   currentBranch,
   createBranch,
-  addAll,
+  branchExists,
+  stageFiles,
+  ensureEnvGitignored,
   commit,
   push,
   openPR,
   ghAvailable,
 } from '../lib/git.js';
+import { DEFAULT_POPULATE_MODEL } from '../lib/models.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROMPTS_DIR = resolve(__dirname, '..', '..', 'prompts');
 
-const DEFAULT_MODEL = 'claude-sonnet-4-7';
+const DEFAULT_MODEL = DEFAULT_POPULATE_MODEL;
 const DEFAULT_MAX_TOKENS = 16000;
 const DEFAULT_MAX_COST = 5.0;
 
@@ -127,6 +131,16 @@ export async function populateCommand(opts: PopulateOptions): Promise<number> {
   if (!opts.dryRun && !opts.noCommit && hasUncommittedChanges(repoPath)) {
     log.error(`Working tree has uncommitted changes`);
     log.dim(`  commit or stash first, or use --no-commit to skip git ops`);
+    return 1;
+  }
+
+  // Pre-flight: refuse early if the populate branch already exists and we're not
+  // on it, rather than writing edits and then failing at branch creation.
+  const branchName = opts.branch ?? 'docentic/populate-content';
+  if (!opts.dryRun && !opts.noCommit && hasCommits(repoPath)
+      && currentBranch(repoPath) !== branchName && branchExists(repoPath, branchName)) {
+    log.error(`Branch ${branchName} already exists.`);
+    log.dim(`  Switch to it, delete it, or pass --branch <name>.`);
     return 1;
   }
 
@@ -305,14 +319,19 @@ Call the apply_doc_edits tool ONCE with edits for every file above. Skip any fil
     return 0;
   }
 
-  const branchName = opts.branch ?? 'docentic/populate-content';
   log.blank();
   log.step(`Committing on ${branchName}…`);
   try {
-    if (currentBranch(repoPath) !== branchName) {
+    const onTarget = hasCommits(repoPath) && currentBranch(repoPath) === branchName;
+    if (!onTarget) {
       createBranch(repoPath, branchName);
     }
-    addAll(repoPath);
+    // Defense-in-depth against leaking the API key: ensure `.env` is gitignored,
+    // then stage ONLY the doc files we actually wrote — never `git add -A`,
+    // which would sweep the user's un-ignored `.env` (live key) into the commit.
+    const stagePaths = [...applied];
+    if (ensureEnvGitignored(repoPath)) stagePaths.push('.gitignore');
+    stageFiles(repoPath, stagePaths);
     commit(
       repoPath,
       `chore: populate docentic scaffold with real content

@@ -6,11 +6,14 @@ import { detectStack, autoDetectedDocs } from '../lib/detect-stack.js';
 import { scaffold } from '../lib/scaffold.js';
 import {
   isGitRepo,
+  hasCommits,
   hasUncommittedChanges,
   currentBranch,
   createBranch,
-  addAll,
+  branchExists,
+  stageFiles,
   commit,
+  ensureEnvGitignored,
   ghAvailable,
   openPR,
   push,
@@ -76,23 +79,17 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     log.dim(`  Edit docs/STACK.md after scaffolding to fix.`);
   }
 
-  // 4. Branch
+  // 4. Branch name (the branch itself is created at commit time, step 6 — so a
+  // failure during scaffolding never strands the repo on an empty branch).
   const branchName = opts.branch ?? 'docentic/template-scaffold';
-  if (!opts.dryRun && !opts.noCommit) {
-    if (currentBranch(repoPath) === branchName) {
-      log.warn(`Already on ${branchName} — staying`);
-    } else {
-      log.blank();
-      log.step(`Creating branch ${branchName}…`);
-      try {
-        createBranch(repoPath, branchName);
-        log.success(`Branched off main`);
-      } catch (err) {
-        log.error(`Failed to create branch: ${(err as Error).message}`);
-        log.dim(`  if it already exists, switch to it or pick a different name with --branch`);
-        return 1;
-      }
-    }
+  // Pre-flight: if the target branch already exists and we're not on it, stop
+  // BEFORE scaffolding. Otherwise we'd write ~50 files and only then fail at
+  // `checkout -b`, leaving a half-scaffold on the user's current branch.
+  if (!opts.dryRun && !opts.noCommit && hasCommits(repoPath)
+      && currentBranch(repoPath) !== branchName && branchExists(repoPath, branchName)) {
+    log.error(`Branch ${branchName} already exists.`);
+    log.dim(`  Switch to it, delete it, or pass --branch <name> to use a different one.`);
+    return 1;
   }
 
   // 5. Scaffold
@@ -128,15 +125,16 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     log.list(nonIgnoredSkips.map((s) => `${s.path}  (${s.reason})`));
   }
 
-  // Hard-stop if .gitignore would swallow scaffolded files. We'd rather make
-  // the user notice and fix it than ship a commit that's missing AGENTS.md.
+  // Hard-stop if .gitignore would swallow scaffolded files. The scaffold is a
+  // true pre-flight: when this fires, NOTHING was written — the repo is
+  // untouched — so the user can fix .gitignore and re-run cleanly.
   if (result.filesGitignored.length > 0 && !opts.forceIgnored) {
     log.blank();
-    log.error(`${result.filesGitignored.length} file(s) would be ignored by .gitignore:`);
+    log.error(`Halted: ${result.filesGitignored.length} scaffold file(s) would be ignored by .gitignore:`);
     log.list(result.filesGitignored);
     log.blank();
-    log.dim(`  These files were NOT written. To fix, either:`);
-    log.dim(`    (a) edit .gitignore to allow them (recommended — docentic files should be tracked), or`);
+    log.dim(`  Nothing was written. To proceed, either:`);
+    log.dim(`    (a) edit .gitignore to allow these paths (recommended — docentic files should be tracked), or`);
     log.dim(`    (b) re-run with --force-ignored to scaffold anyway (they'll still be ignored by git)`);
     return 1;
   }
@@ -164,7 +162,29 @@ export async function initCommand(opts: InitOptions): Promise<number> {
   log.blank();
   log.step('Committing…');
   try {
-    addAll(repoPath);
+    // Create the branch now (not earlier): if anything above failed, the repo
+    // was never moved off the user's branch. Guard the HEAD query for unborn
+    // repos (`git init` with no commits yet) where there's no current branch.
+    const onTarget = hasCommits(repoPath) && currentBranch(repoPath) === branchName;
+    if (onTarget) {
+      log.dim(`  already on ${branchName} — staying`);
+    } else {
+      const from = hasCommits(repoPath) ? currentBranch(repoPath) : null;
+      createBranch(repoPath, branchName);
+      log.success(from ? `Branched off ${from}` : `Created branch ${branchName}`);
+    }
+
+    // Protect the user's secrets: make sure `.env` is gitignored before we ever
+    // commit, so a later `docentic populate` can't sweep a live API key in.
+    const stagePaths = [...result.filesCreated];
+    if (ensureEnvGitignored(repoPath)) {
+      log.dim(`  added .env to .gitignore (keeps API keys out of git)`);
+      stagePaths.push('.gitignore');
+    }
+
+    // Stage only the files we created (+ the .gitignore tweak) — never `git
+    // add -A`, which could sweep in an un-ignored .env or unrelated changes.
+    stageFiles(repoPath, stagePaths);
     const msg = commitMessage(repoName, stack, autoDocs, result.filesCreated.length);
     commit(repoPath, msg);
     log.success(`Committed on ${branchName}`);
@@ -252,7 +272,7 @@ docs/* TODOs with real content, either:
 
   (a) paste prompts/bootstrap.md (from the docentic repo) into any
       LLM with read access to this repo, or
-  (b) run \`docentic populate\` with an API key in .env (coming soon)
+  (b) run \`docentic populate\` with an API key in .env
 
 Then run the Config Seeder (prompts/config-seeder.md) to propose
 topics for research/config.yml.

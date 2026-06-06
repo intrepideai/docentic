@@ -748,6 +748,40 @@ done
 cleanup "$DIR"
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SUITE 12 — PHP / Laravel language adapter (lang/php.sh)
+echo
+echo "━━━ Suite 12: PHP adapter (gen-* on a Laravel repo) ━━━"
+echo
+
+DIR=$(make_fixture)
+mkdir -p "$DIR/routes" "$DIR/app/Models" "$DIR/app/Http"
+printf '{\n  "name": "acme/billing",\n  "require": {\n    "php": "^8.2",\n    "laravel/framework": "^11.0",\n    "stripe/stripe-php": "^13.0",\n    "predis/predis": "^2.0"\n  }\n}\n' > "$DIR/composer.json"
+touch "$DIR/artisan"
+printf '<?php\nuse Illuminate\\Support\\Facades\\Route;\nRoute::get('"'"'/health'"'"', [HC::class, '"'"'show'"'"']);\nRoute::resource('"'"'invoices'"'"', IC::class);\n' > "$DIR/routes/api.php"
+printf '<?php\nnamespace App\\Models;\nuse Illuminate\\Database\\Eloquent\\Model;\nclass Invoice extends Model {}\n' > "$DIR/app/Models/Invoice.php"
+printf '<?php\nclass HealthController {\n  public function show() {\n    $db = env('"'"'DATABASE_URL'"'"');\n    $k = env('"'"'STRIPE_SECRET'"'"');\n  }\n}\n' > "$DIR/app/Http/HealthController.php"
+
+OUT=$(bash "$DIR/scripts/llm-docs/gen-stack.sh")
+assert_contains "12 stack: name"               "$OUT" "acme/billing"
+assert_contains "12 stack: composer"           "$OUT" '`composer`'
+assert_contains "12 stack: Laravel framework"  "$OUT" "Laravel"
+assert_contains "12 stack: package laravel"    "$OUT" "laravel/framework"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-api.sh")
+assert_contains "12 api: stack=php"            "$OUT" '`php`'
+assert_contains "12 api: GET /health"          "$OUT" "/health"
+assert_contains "12 api: RESTful invoices"     "$OUT" "invoices"
+OUT=$(bash "$DIR/scripts/llm-docs/gen-data.sh")
+assert_contains "12 data: Eloquent"            "$OUT" "Eloquent"
+assert_contains "12 data: Invoice model"       "$OUT" '`Invoice`'
+OUT=$(bash "$DIR/scripts/llm-docs/gen-integrations.sh")
+assert_contains "12 integ: Stripe"             "$OUT" "Stripe"
+assert_contains "12 integ: env DATABASE_URL"   "$OUT" "DATABASE_URL"
+for g in gen-stack gen-api gen-data gen-integrations gen-map; do
+  assert_exits_ok "12 $g.sh exits 0 on PHP repo" "$DIR/scripts/llm-docs/$g.sh"
+done
+cleanup "$DIR"
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Summary
 # ══════════════════════════════════════════════════════════════════════════════
 echo

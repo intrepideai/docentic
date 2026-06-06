@@ -79,6 +79,11 @@ function detectInDir(repoPath: string, subdir: string, result: DetectedStack): v
 
   let touched = false;
   const has = (...names: string[]) => names.some((n) => existsSync(join(dirAbs, n)));
+  // existsSync doesn't expand globs, so match by suffix against real dir entries
+  // (e.g. *.xcodeproj). Returns false if the dir can't be read.
+  const hasEntryMatching = (re: RegExp): boolean => {
+    try { return readdirSync(dirAbs).some((f) => re.test(f)); } catch { return false; }
+  };
   const read = (name: string): string => {
     try { return readFileSync(join(dirAbs, name), 'utf-8'); } catch { return ''; }
   };
@@ -98,6 +103,21 @@ function detectInDir(repoPath: string, subdir: string, result: DetectedStack): v
   if (has('go.mod')) {
     if (!result.languages.includes('go')) result.languages.push('go');
     touched = true;
+    // Go web framework + DB driver/ORM from go.mod's require graph. (go.sum only
+    // adds per-module hashes — every package we match is already in go.mod.)
+    const gomod = read('go.mod');
+    if (!result.framework) {
+      if (/gin-gonic\/gin/.test(gomod)) result.framework = 'gin';
+      else if (/labstack\/echo/.test(gomod)) result.framework = 'echo';
+      else if (/go-chi\/chi/.test(gomod)) result.framework = 'chi';
+      else if (/gofiber\/fiber/.test(gomod)) result.framework = 'fiber';
+    }
+    if (!result.database) {
+      if (/gorm\.io\/gorm|jinzhu\/gorm/.test(gomod)) result.database = 'gorm';
+      else if (/entgo\.io\/ent/.test(gomod)) result.database = 'ent';
+      else if (/jackc\/pgx/.test(gomod)) result.database = 'pgx';
+      else if (/jmoiron\/sqlx/.test(gomod)) result.database = 'sqlx';
+    }
   }
   if (has('Cargo.toml')) {
     if (!result.languages.includes('rust')) result.languages.push('rust');
@@ -130,7 +150,7 @@ function detectInDir(repoPath: string, subdir: string, result: DetectedStack): v
     if (!result.labels.includes('flutter')) result.labels.push('flutter');
     touched = true;
   }
-  if (has('Package.swift') || has('*.xcodeproj') || existsSync(join(dirAbs, 'ios'))) {
+  if (has('Package.swift') || hasEntryMatching(/\.xcodeproj$/) || existsSync(join(dirAbs, 'ios'))) {
     if (!result.languages.includes('swift/objc')) result.languages.push('swift/objc');
     result.hasMobile = true;
     touched = true;

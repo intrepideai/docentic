@@ -56,6 +56,8 @@ run_detect() {
     cd "$dir"
     # shellcheck source=/dev/null
     source "$dir/scripts/llm-docs/detect-stack.sh" 2>/dev/null
+    echo "LANGUAGE=${LANGUAGE:-}"
+    echo "MANIFEST=${MANIFEST:-}"
     echo "STACK_TYPE=${STACK_TYPE:-}"
     echo "IS_MONOREPO=${IS_MONOREPO:-}"
     echo "APP_PKG=${APP_PKG:-}"
@@ -565,6 +567,55 @@ else
   # rg not available or no OPS.md check triggered — skip gracefully
   pass "7 validate.sh ran without crashing (rg check skipped)"
 fi
+cleanup "$DIR"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SUITE 8 — detect-stack.sh: polyglot LANGUAGE / MANIFEST / SRC_DIRS layer
+echo
+echo "━━━ Suite 8: detect-stack.sh language layer ━━━"
+echo
+
+# ── 8a: Python (poetry), no package.json ─────────────────────────────────────
+DIR=$(make_fixture)
+printf '[tool.poetry]\nname = "svc"\n' > "$DIR/pyproject.toml"
+: > "$DIR/poetry.lock"
+mkdir -p "$DIR/src" "$DIR/app"
+OUT=$(run_detect "$DIR")
+assert_eq       "8a LANGUAGE=python"        "$(get_var "$OUT" LANGUAGE)" "python"
+assert_eq       "8a MANIFEST=pyproject.toml" "$(get_var "$OUT" MANIFEST)" "pyproject.toml"
+assert_eq       "8a PACKAGE_MANAGER=poetry"  "$(get_var "$OUT" PACKAGE_MANAGER)" "poetry"
+assert_contains "8a SRC_DIRS has src"        "$(get_var "$OUT" SRC_DIRS)" "src"
+assert_contains "8a SRC_DIRS has app"        "$(get_var "$OUT" SRC_DIRS)" "app"
+cleanup "$DIR"
+
+# ── 8b: Go ───────────────────────────────────────────────────────────────────
+DIR=$(make_fixture)
+printf 'module example.com/x\ngo 1.22\n' > "$DIR/go.mod"
+mkdir -p "$DIR/cmd" "$DIR/internal"
+OUT=$(run_detect "$DIR")
+assert_eq       "8b LANGUAGE=go"            "$(get_var "$OUT" LANGUAGE)" "go"
+assert_eq       "8b PACKAGE_MANAGER=go"     "$(get_var "$OUT" PACKAGE_MANAGER)" "go"
+assert_contains "8b SRC_DIRS has cmd"       "$(get_var "$OUT" SRC_DIRS)" "cmd"
+assert_contains "8b SRC_DIRS has internal"  "$(get_var "$OUT" SRC_DIRS)" "internal"
+cleanup "$DIR"
+
+# ── 8c: JS keeps language js-ts AND now scans lib/ (the env-var gap) ──────────
+DIR=$(make_fixture)
+printf '{"dependencies":{"next":"^15"}}' > "$DIR/package.json"
+: > "$DIR/package-lock.json"
+mkdir -p "$DIR/app" "$DIR/lib"
+OUT=$(run_detect "$DIR")
+assert_eq       "8c LANGUAGE=js-ts"          "$(get_var "$OUT" LANGUAGE)" "js-ts"
+assert_eq       "8c PACKAGE_MANAGER=npm"     "$(get_var "$OUT" PACKAGE_MANAGER)" "npm"
+assert_contains "8c SRC_DIRS now includes lib" "$(get_var "$OUT" SRC_DIRS)" "lib"
+cleanup "$DIR"
+
+# ── 8d: Bare repo → unknown, empty package manager, no crash ─────────────────
+DIR=$(make_fixture)
+printf '# readme\n' > "$DIR/README.md"
+OUT=$(run_detect "$DIR")
+assert_eq       "8d LANGUAGE=unknown"        "$(get_var "$OUT" LANGUAGE)" "unknown"
+assert_eq       "8d PACKAGE_MANAGER empty"   "$(get_var "$OUT" PACKAGE_MANAGER)" ""
 cleanup "$DIR"
 
 # ══════════════════════════════════════════════════════════════════════════════

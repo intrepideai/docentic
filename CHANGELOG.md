@@ -8,35 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-06
+
+Stack-agnostic generators and multi-provider content-fill. docentic's
+deterministic doc generators now produce real content for Python, Go, Ruby, and
+PHP (not just JS/TS), and `populate` works with OpenAI and Gemini as well as
+Anthropic. Includes the 0.2.3 safety/contract hardening.
+
 ### Added
+- **Stack-agnostic generators via a `lang/<LANGUAGE>.sh` adapter seam.** The deterministic generators (`gen-stack`/`gen-api`/`gen-data`/`gen-integrations`) now produce real content for non-JS repos instead of blank/wrong skeletons, dispatching to a per-language adapter; the JS/TS paths are untouched.
+  - **Python** (`lang/python.sh`) — `pyproject.toml`/`requirements.txt` stack; FastAPI/Flask decorator routes + Django URLConf (incl. `re_path(r"…")`); SQLAlchemy/Django models; `os.environ`/`os.getenv` env vars; Python services.
+  - **Go** (`lang/go.sh`) — `go.mod` module/version/deps; gin/chi/echo verbs + net/http·gorilla `HandleFunc` (multiple routes per line); GORM models; `os.Getenv`/`os.LookupEnv`; Go services.
+  - **Ruby / Rails** (`lang/ruby.sh`) — `Gemfile`/`.ruby-version`; `config/routes.rb` verbs + `resources`/`resource` (plural vs singular); ActiveRecord models; `ENV[...]`/`ENV.fetch`; Ruby services.
+  - **PHP / Laravel** (`lang/php.sh`) — `composer.json` (`require` only); `Route::get/…` + `Route::resource`/`apiResource`; Eloquent models; `env()`/`getenv()`/`$_ENV[]`; PHP services.
 - **Multi-provider `populate`** — real OpenAI and Google Gemini support alongside Anthropic, behind a small provider abstraction (`src/lib/llm/`). The provider is chosen by `DOCENT_PROVIDER`, else the first key present (`ANTHROPIC_API_KEY` → `OPENAI_API_KEY` → `GEMINI_API_KEY`). OpenAI uses Chat Completions + function calling (honors `OPENAI_MODEL` / `OPENAI_BASE_URL`); Gemini uses `generateContent` + function calling (honors `GEMINI_MODEL`). Covered by mocked-transport unit tests for all three.
+- **Polyglot detection foundation.** `detect-stack.sh` exports a primary `LANGUAGE` (`js-ts` · `python` · `go` · `rust` · `ruby` · `php` · `java` · `unknown`) and the resolved `MANIFEST` path, and picks a language-appropriate `PACKAGE_MANAGER` (pip/poetry/uv/pipenv · go · cargo · bundler · composer · maven/gradle) instead of defaulting everything to `npm`. `SRC_DIRS` is now language-aware (includes `lib/` for JS, and `cmd/`/`internal/`/`pkg/`/… for non-JS). The TS detector also gains Go web-framework (`gin`/`echo`/`chi`/`fiber`) and DB (`gorm`/`ent`/`pgx`/`sqlx`) detection.
 
 ### Changed
-- **Honest, layered scope copy.** README tagline + body now state the real scope: scaffold/detection/LLM-fill on any repo; deterministic generators for JS/TS, Python, Go, Ruby, and PHP. Corrected the stale "two smoke tests" CI claim, the GLOSSARY spine count (12 core docs in `docs/` + root `AGENTS.md`, not "13 in docs/"), and the PR label mismatch (`init` now uses the `docentic` label, matching `populate`).
+- **Honest, layered scope copy.** README tagline + body now state the real scope: scaffold/detection/LLM-fill on any repo; deterministic generators for JS/TS, Python, Go, Ruby, and PHP. Corrected the stale "two smoke tests" CI claim, the GLOSSARY spine count (12 core docs in `docs/` + root `AGENTS.md`, not "13 in docs/"), and the PR label mismatch (`init` now uses the `docentic` label, matching `populate` and the maintenance loop).
 - `.agents/index.json` `template_version` is now stamped with docentic's real version (was hardcoded `0.1.0`).
 - `init`'s "next steps" points at the real maintenance entry point (`scripts/llm-docs/MAINTAIN.md`) instead of "7 prompts (see prompts/)"; `MAINTAIN.md` Step 3 no longer hardcodes docentic's own `apps/docs/` layout.
 - `install --project` now warns it's Cursor-only instead of silently ignoring it for Claude.
-- `populate` cost estimates are now **per-model** (`src/lib/pricing.ts`) instead of always Sonnet-priced, and `--max-cost` / `DOCENT_MAX_COST_USD` gate against the right figure.
+- `populate` cost estimates are now **per-model** (`src/lib/pricing.ts`) instead of always Sonnet-priced, and `--max-cost` / `DOCENT_MAX_COST_USD` gate against the right figure (a non-numeric env value is ignored rather than disabling the guard).
 - `.env.example` rewritten to reflect what the code actually reads (real providers, valid model ids, `DOCENT_PROVIDER`, `DOCENT_MODEL_BOOTSTRAP`, `DOCENT_MAX_COST_USD`) and drops the false "coming soon — scaffold-only" note and the dead env vars.
 
 ### Fixed
 - `populate` now **refuses to apply a truncated response** (`stop_reason`/`finish_reason` = max tokens) instead of writing partial/garbled file content, and validates the structured tool output rather than blindly casting it.
-
-### Added
-- **PHP / Laravel generator support** (`scripts/llm-docs/lang/php.sh`). `gen-stack` reads `composer.json` (name, PHP version, packages, Laravel detection); `gen-api` extracts `routes/*.php` `Route::get/post/…` and `Route::resource`/`apiResource` declarations; `gen-data` lists Eloquent models (`extends Model`/`Authenticatable`); `gen-integrations` detects PHP services (Laravel, predis, aws-sdk-php, stripe-php, sanctum/passport, sentry, guzzle) and scans `env()`/`getenv()`/`$_ENV[]`.
-- **Ruby / Rails generator support** (`scripts/llm-docs/lang/ruby.sh`). `gen-stack` reads `Gemfile` + `.ruby-version` (Ruby version, gems, Rails detection); `gen-api` extracts `config/routes.rb` verb routes and `resources`/`resource` declarations; `gen-data` lists ActiveRecord models (abstract `ApplicationRecord` excluded); `gen-integrations` detects Ruby services (pg/mysql2, redis, sidekiq, aws-sdk, stripe, sendgrid, sentry, devise) and scans `ENV[...]`/`ENV.fetch`.
-- **Go generator support** (`scripts/llm-docs/lang/go.sh`). `gen-stack` reads `go.mod` (module, Go version, `require` deps); `gen-api` extracts gin/chi/echo route verbs and net/http·gorilla `HandleFunc` handlers with file links; `gen-data` lists GORM models (non-model structs excluded); `gen-integrations` detects Go services (pgx/gorm, go-redis, aws-sdk-go, stripe-go, sendgrid, sentry-go) and scans `os.Getenv`/`os.LookupEnv`.
-- **Python generator support** (first language adapter). `scripts/llm-docs/lang/python.sh` makes the deterministic generators produce *real* content for Python repos instead of blank/wrong skeletons: `gen-stack` reads `pyproject.toml`/`requirements.txt` (name, version, Python version, key deps, `pip`/`poetry`/`uv`); `gen-api` extracts FastAPI/Flask decorator routes and Django URLConf entries with file links; `gen-data` lists SQLAlchemy/Django models; `gen-integrations` detects Python services (SQLAlchemy/psycopg, boto3, redis, stripe, celery, sentry, …) and scans `os.environ`/`os.getenv` for env vars. The generators dispatch to a per-language adapter via the new `lang/<LANGUAGE>.sh` seam, leaving the JS/TS paths untouched. (Go, Ruby, PHP adapters follow.)
-- `gen-stack` now falls back to the lockfile-derived package manager when package.json's corepack `.packageManager` field is absent, so the row is no longer blank for plain npm/pnpm/yarn/bun repos.
-- `gen-integrations` links the detected manifest (`pyproject.toml`, `go.mod`, …) as source-of-truth and only when it exists — no more dead `package.json` link on non-Node repos.
-- **Polyglot detection foundation** (toward stack-agnostic generators). `detect-stack.sh` now exports a primary `LANGUAGE` (`js-ts` · `python` · `go` · `rust` · `ruby` · `php` · `java` · `unknown`) and the resolved `MANIFEST` path, and picks a language-appropriate `PACKAGE_MANAGER` (pip/poetry/uv/pipenv · go · cargo · bundler · composer · maven/gradle) instead of defaulting everything to `npm`. The per-language generator adapters in the next release build on this.
-- `SRC_DIRS` is now language-aware and comprehensive — it includes `lib/` (where Next.js apps keep their Prisma/Stripe/email singletons, previously missed by the env-var scan) and the right roots for non-JS stacks (`cmd/`, `internal/`, `pkg/`, `alembic/`, …).
-- Go web-framework (`gin`/`echo`/`chi`/`fiber`) and DB (`gorm`/`ent`/`pgx`/`sqlx`) detection in the TypeScript stack detector.
-
-### Fixed
+- Generators no longer write **confidently-wrong content** into the "source of truth" docs: dependencies/services named only in a comment are no longer reported as active, commented-out routes/models are skipped, and multiple route registrations on one line are all captured (not collapsed into a fabricated endpoint).
+- `gen-stack` falls back to the lockfile-derived package manager when package.json's corepack `.packageManager` field is absent (no more blank row for plain npm/pnpm/yarn/bun repos); `gen-integrations` links the detected manifest as source-of-truth only when it exists (no dead `package.json` link on non-Node repos).
 - `*.xcodeproj` detection in the stack detector was dead code (`existsSync` doesn't expand globs); it now matches real directory entries by suffix.
-- `docentic populate`'s context-gatherer no longer skips nested monorepo schemas — the `apps/*/prisma/schema.prisma` glob is actually expanded (it was previously `continue`-d past), and Drizzle default layouts are gathered too.
-- `populate` now includes monorepo app manifests (`apps/*/package.json`), so the LLM sees the app's real dependencies instead of only an empty root workspace manifest.
+- `populate`'s context-gatherer no longer skips nested monorepo schemas — the `apps/*/prisma/schema.prisma` glob is actually expanded (it was previously `continue`-d past), Drizzle default layouts are gathered, and monorepo app manifests (`apps/*/package.json`) are included so the LLM sees real app dependencies.
 
 ## [0.2.3] — 2026-06-05
 
@@ -222,7 +223,9 @@ and detect more of what's actually in the repo.
 - CI: typecheck + two smoke tests (dry-run, full scaffold)
 - README with dual copy-paste hero (terminal + LLM prompt), comparison table, Mermaid spine diagram, "agent-friendly" badge for downstream repos
 
-[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/intrepideai/docentic/compare/v0.2.3...v0.3.0
+[0.2.3]: https://github.com/intrepideai/docentic/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/intrepideai/docentic/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/intrepideai/docentic/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/intrepideai/docentic/compare/v0.1.1...v0.2.0

@@ -32,6 +32,26 @@ jobs:
       - name: Unit + CLI integration tests
         run: npm test
 
+      - name: Package — version agreement + tarball contents
+        run: |
+          # package.json and the lockfile must agree on the version.
+          PKG=$(node -p "require('./package.json').version")
+          LOCK=$(node -p "require('./package-lock.json').version")
+          test "$PKG" = "$LOCK" || (echo "✗ version drift: package.json=$PKG lock=$LOCK"; exit 1)
+          # The published tarball must include dist/ (built via prepare) and the
+          # language adapters — a missing files[] entry would ship a broken pkg.
+          npm pack --silent > /dev/null
+          TARBALL=$(ls ./*.tgz | head -1)
+          for path in package/dist/cli.js \
+                      package/templates/scripts/llm-docs/lang/python.sh \
+                      package/templates/scripts/llm-docs/lang/go.sh \
+                      package/templates/scripts/llm-docs/lang/ruby.sh \
+                      package/templates/scripts/llm-docs/lang/php.sh; do
+            tar tzf "$TARBALL" | grep -qx "$path" || (echo "✗ missing from tarball: $path"; exit 1)
+          done
+          rm -f "$TARBALL"
+          echo "✓ version agrees ($PKG) and tarball contents look right"
+
       - name: Smoke test — dry run against a fresh repo
         run: |
           TESTDIR=$(mktemp -d)

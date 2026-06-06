@@ -1,17 +1,18 @@
 // `docentic populate` — fill scaffolded TODOs using an LLM.
 //
-// Reads .env (or process.env) for an Anthropic API key, gathers context from
-// the target repo, calls Claude with the bootstrap prompt + context, parses
-// structured edits from a tool_use response, applies them, and optionally
-// opens a PR.
+// Reads .env (or process.env) for an LLM API key, gathers context from the
+// target repo, asks the model (Anthropic / OpenAI / Gemini) to call the
+// apply_doc_edits tool, applies the returned edits, and optionally opens a PR.
 //
-// v0.1 supports Anthropic only. OpenAI / Gemini coming in v0.2.
+// Provider is chosen by DOCENT_PROVIDER, or the first key present
+// (ANTHROPIC_API_KEY → OPENAI_API_KEY → GEMINI_API_KEY).
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { callMessages, estimateTokens, estimateCostUsd, AnthropicError } from '../lib/anthropic.js';
+import { selectProvider, resolveModel, anthropicProvider, LlmError, type Provider, type StructuredTool } from '../lib/llm/index.js';
+import { estimateTokens, estimateCostUsd } from '../lib/pricing.js';
 import { gatherContext, formatContextForPrompt } from '../lib/repo-context.js';
 import { log } from '../lib/log.js';
 import {
@@ -28,13 +29,11 @@ import {
   openPR,
   ghAvailable,
 } from '../lib/git.js';
-import { DEFAULT_POPULATE_MODEL } from '../lib/models.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROMPTS_DIR = resolve(__dirname, '..', '..', 'prompts');
 
-const DEFAULT_MODEL = DEFAULT_POPULATE_MODEL;
 const DEFAULT_MAX_TOKENS = 16000;
 const DEFAULT_MAX_COST = 5.0;
 
@@ -119,14 +118,30 @@ export async function populateCommand(opts: PopulateOptions): Promise<number> {
   }
 
   loadDotenv(repoPath);
-  const apiKey = opts.apiKey ?? process.env.ANTHROPIC_API_KEY;
-  if (!apiKey && !opts.dryRun) {
-    log.error(`No ANTHROPIC_API_KEY found in env or ${repoPath}/.env`);
-    log.dim(`  Set it in .env (copy .env.example), or pass it inline:`);
-    log.dim(`  ANTHROPIC_API_KEY=sk-ant-... docentic populate`);
-    log.dim(`  Or use --dry-run to inspect what would be sent without an API call.`);
-    return 1;
+  // Choose the provider (DOCENT_PROVIDER, else first key present). --dry-run
+  // works without any key. An explicit --api-key forces Anthropic.
+  let provider: Provider | undefined;
+  let apiKey: string | undefined = opts.apiKey;
+  if (opts.apiKey) {
+    provider = anthropicProvider; // explicit --api-key targets Anthropic
+  } else {
+    const selection = selectProvider();
+    if ('error' in selection) {
+      if (!opts.dryRun) {
+        log.error(selection.error);
+        log.dim(`  Copy .env.example to .env and add a key, or pass one inline:`);
+        log.dim(`  ANTHROPIC_API_KEY=sk-ant-... docentic populate`);
+        log.dim(`  Or use --dry-run to inspect what would be sent without an API call.`);
+        return 1;
+      }
+    } else {
+      provider = selection.provider;
+      apiKey = selection.apiKey;
+    }
   }
+  // Dry-run with no provider resolved falls back to Anthropic's default model
+  // just for the cost-estimate display.
+  const model = resolveModel(provider ?? anthropicProvider, opts.model);
 
   if (!opts.dryRun && !opts.noCommit && hasUncommittedChanges(repoPath)) {
     log.error(`Working tree has uncommitted changes`);
@@ -204,84 +219,86 @@ Call the apply_doc_edits tool ONCE with edits for every file above. Skip any fil
 
   const inputTokens = estimateTokens(systemPrompt + userPrompt);
   log.blank();
+  log.dim(`  provider: ${provider ? provider.label : '(none — dry run)'} · model: ${model}`);
   log.dim(`  prompt: ~${inputTokens.toLocaleString()} tokens in`);
-  const maxCost = opts.maxCostUsd ?? DEFAULT_MAX_COST;
-  const estCost = estimateCostUsd(inputTokens, DEFAULT_MAX_TOKENS);
+  // Resolve the cost ceiling: --max-cost, else DOCENT_MAX_COST_USD, else the
+  // default. Ignore a non-numeric env value rather than letting NaN silently
+  // disable the guard (every `estCost > NaN` is false).
+  const envMaxCost = Number(process.env.DOCENT_MAX_COST_USD);
+  const maxCost = opts.maxCostUsd ?? (Number.isFinite(envMaxCost) ? envMaxCost : DEFAULT_MAX_COST);
+  const estCost = estimateCostUsd(model, inputTokens, DEFAULT_MAX_TOKENS);
   log.dim(`  estimated max cost: $${estCost.toFixed(2)} (max allowed: $${maxCost.toFixed(2)})`);
   if (estCost > maxCost) {
-    log.error(`Estimated cost exceeds max_cost_usd limit. Raise it with --max-cost or reduce repo context.`);
+    log.error(`Estimated cost exceeds the --max-cost limit. Raise it with --max-cost or reduce repo context.`);
     return 1;
   }
 
   if (opts.dryRun) {
     log.blank();
-    log.success(`Dry run — would call ${opts.model ?? DEFAULT_MODEL} with ~${inputTokens.toLocaleString()} input tokens`);
+    log.success(`Dry run — would call ${model} with ~${inputTokens.toLocaleString()} input tokens`);
     log.dim(`  files that would be populated: ${Object.keys(todoFileContents).join(', ')}`);
     return 0;
   }
 
-  // 5. Call the API
+  // 5. Call the provider
   log.blank();
-  log.step(`Calling ${opts.model ?? DEFAULT_MODEL}…`);
-  // apiKey is guaranteed defined here (dry-run path already returned above)
-  if (!apiKey) return 1; // unreachable, but satisfies TS
-  let response;
-  try {
-    response = await callMessages(
-      {
-        model: opts.model ?? DEFAULT_MODEL,
-        max_tokens: DEFAULT_MAX_TOKENS,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-        tools: [
-          {
-            name: 'apply_doc_edits',
-            description: 'Apply edits to the scaffolded doc files.',
-            input_schema: {
-              type: 'object',
-              required: ['edits'],
-              properties: {
-                edits: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    required: ['file', 'content'],
-                    properties: {
-                      file: { type: 'string', description: 'Path relative to repo root' },
-                      content: { type: 'string', description: 'COMPLETE new content of the file (not a diff)' },
-                      rationale: { type: 'string', description: 'One sentence on what changed and why' },
-                    },
-                  },
-                },
-              },
+  log.step(`Calling ${provider!.label} (${model})…`);
+  // provider + apiKey are guaranteed here (dry-run path already returned above)
+  if (!provider || !apiKey) return 1; // unreachable, but satisfies TS
+  const tool: StructuredTool = {
+    name: 'apply_doc_edits',
+    description: 'Apply edits to the scaffolded doc files.',
+    inputSchema: {
+      type: 'object',
+      required: ['edits'],
+      properties: {
+        edits: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['file', 'content'],
+            properties: {
+              file: { type: 'string', description: 'Path relative to repo root' },
+              content: { type: 'string', description: 'COMPLETE new content of the file (not a diff)' },
+              rationale: { type: 'string', description: 'One sentence on what changed and why' },
             },
           },
-        ],
-        tool_choice: { type: 'tool', name: 'apply_doc_edits' },
+        },
       },
+    },
+  };
+  let result;
+  try {
+    result = await provider.callStructured(
+      { model, maxTokens: DEFAULT_MAX_TOKENS, system: systemPrompt, user: userPrompt, tool },
       { apiKey },
     );
   } catch (err) {
-    if (err instanceof AnthropicError) {
-      log.error(`Anthropic API error: ${err.message}`);
+    if (err instanceof LlmError) {
+      log.error(`${provider.label} API error: ${err.message}`);
     } else {
       log.error(`Unexpected error: ${(err as Error).message}`);
     }
     return 1;
   }
 
-  const actualCost = estimateCostUsd(response.usage.input_tokens, response.usage.output_tokens);
-  log.dim(`  used: ${response.usage.input_tokens.toLocaleString()} in / ${response.usage.output_tokens.toLocaleString()} out (~$${actualCost.toFixed(2)})`);
+  const actualCost = estimateCostUsd(model, result.usage.inputTokens, result.usage.outputTokens);
+  log.dim(`  used: ${result.usage.inputTokens.toLocaleString()} in / ${result.usage.outputTokens.toLocaleString()} out (~$${actualCost.toFixed(2)})`);
 
-  // 6. Extract edits from tool_use
-  const toolUse = response.content.find((b) => b.type === 'tool_use') as
-    | { type: 'tool_use'; input: { edits?: DocEdit[] } }
-    | undefined;
-  if (!toolUse) {
-    log.error(`Model did not call apply_doc_edits — stop_reason: ${response.stop_reason}`);
+  // Refuse to apply a truncated response — partial JSON would corrupt files.
+  if (result.truncated) {
+    log.error(`Response was truncated at max tokens (${DEFAULT_MAX_TOKENS}) — not applying partial edits.`);
+    log.dim(`  Re-run with fewer TODO files, or a model/plan with a larger output budget.`);
     return 1;
   }
-  const edits = toolUse.input?.edits ?? [];
+
+  // 6. Extract edits from the structured tool call
+  const toolInput = result.input as { edits?: DocEdit[] } | null;
+  if (!toolInput) {
+    log.error(`Model did not call apply_doc_edits — stop_reason: ${result.stopReason}`);
+    return 1;
+  }
+  const edits = Array.isArray(toolInput.edits) ? toolInput.edits : [];
   if (edits.length === 0) {
     log.warn(`Model returned 0 edits — nothing to apply`);
     return 0;
@@ -339,7 +356,7 @@ Call the apply_doc_edits tool ONCE with edits for every file above. Skip any fil
 Files populated by \`docentic populate\`:
 ${applied.map((f) => `  - ${f}`).join('\n')}
 
-Generated with ${opts.model ?? DEFAULT_MODEL}.
+Generated with ${provider.label} (${model}).
 Approx cost: $${actualCost.toFixed(2)}
 
 Co-Authored-By: docentic populate <clyde@intrepide.ai>`,
@@ -367,7 +384,7 @@ Co-Authored-By: docentic populate <clyde@intrepide.ai>`,
     push(repoPath, branchName);
     const url = openPR(repoPath, {
       title: 'chore: populate docentic scaffold with real content',
-      body: `Populated by \`docentic populate\` using ${opts.model ?? DEFAULT_MODEL}.
+      body: `Populated by \`docentic populate\` using ${provider.label} (${model}).
 
 ## Files populated
 ${applied.map((f) => `- \`${f}\``).join('\n')}
@@ -376,7 +393,7 @@ ${applied.map((f) => `- \`${f}\``).join('\n')}
 ${skipped.length > 0 ? skipped.map((s) => `- \`${s.file}\` — ${s.reason}`).join('\n') : '_(none)_'}
 
 ## Cost
-~$${actualCost.toFixed(2)} (${response.usage.input_tokens.toLocaleString()} input + ${response.usage.output_tokens.toLocaleString()} output tokens)
+~$${actualCost.toFixed(2)} (${result.usage.inputTokens.toLocaleString()} input + ${result.usage.outputTokens.toLocaleString()} output tokens)
 
 ## Review checklist
 - [ ] Content is accurate (no hallucinated paths / functions / env vars)

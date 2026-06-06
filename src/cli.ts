@@ -58,9 +58,9 @@ program
 
 program
   .command('populate')
-  .description('Fill scaffolded TODOs by reading the codebase. Requires ANTHROPIC_API_KEY in .env or env.')
+  .description('Fill scaffolded TODOs by reading the codebase. Needs an LLM key (ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY) in .env or env.')
   .argument('[path]', 'target repo path (defaults to cwd)')
-  .option('-m, --model <name>', 'Claude model to use (default: claude-sonnet-4-6)')
+  .option('-m, --model <name>', 'model id (default: the chosen provider\'s default, e.g. claude-sonnet-4-6)')
   .option('--max-cost <usd>', 'abort if estimated cost exceeds this USD amount (default: 5)', parseFloat)
   .option('--no-pr', 'commit on a branch but do not open a PR')
   .option('--no-commit', 'apply edits without git operations')

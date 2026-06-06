@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Multi-provider `populate`** — real OpenAI and Google Gemini support alongside Anthropic, behind a small provider abstraction (`src/lib/llm/`). The provider is chosen by `DOCENT_PROVIDER`, else the first key present (`ANTHROPIC_API_KEY` → `OPENAI_API_KEY` → `GEMINI_API_KEY`). OpenAI uses Chat Completions + function calling (honors `OPENAI_MODEL` / `OPENAI_BASE_URL`); Gemini uses `generateContent` + function calling (honors `GEMINI_MODEL`). Covered by mocked-transport unit tests for all three.
+
+### Changed
+- `populate` cost estimates are now **per-model** (`src/lib/pricing.ts`) instead of always Sonnet-priced, and `--max-cost` / `DOCENT_MAX_COST_USD` gate against the right figure.
+- `.env.example` rewritten to reflect what the code actually reads (real providers, valid model ids, `DOCENT_PROVIDER`, `DOCENT_MODEL_BOOTSTRAP`, `DOCENT_MAX_COST_USD`) and drops the false "coming soon — scaffold-only" note and the dead env vars.
+
+### Fixed
+- `populate` now **refuses to apply a truncated response** (`stop_reason`/`finish_reason` = max tokens) instead of writing partial/garbled file content, and validates the structured tool output rather than blindly casting it.
+
+### Added
 - **PHP / Laravel generator support** (`scripts/llm-docs/lang/php.sh`). `gen-stack` reads `composer.json` (name, PHP version, packages, Laravel detection); `gen-api` extracts `routes/*.php` `Route::get/post/…` and `Route::resource`/`apiResource` declarations; `gen-data` lists Eloquent models (`extends Model`/`Authenticatable`); `gen-integrations` detects PHP services (Laravel, predis, aws-sdk-php, stripe-php, sanctum/passport, sentry, guzzle) and scans `env()`/`getenv()`/`$_ENV[]`.
 - **Ruby / Rails generator support** (`scripts/llm-docs/lang/ruby.sh`). `gen-stack` reads `Gemfile` + `.ruby-version` (Ruby version, gems, Rails detection); `gen-api` extracts `config/routes.rb` verb routes and `resources`/`resource` declarations; `gen-data` lists ActiveRecord models (abstract `ApplicationRecord` excluded); `gen-integrations` detects Ruby services (pg/mysql2, redis, sidekiq, aws-sdk, stripe, sendgrid, sentry, devise) and scans `ENV[...]`/`ENV.fetch`.
 - **Go generator support** (`scripts/llm-docs/lang/go.sh`). `gen-stack` reads `go.mod` (module, Go version, `require` deps); `gen-api` extracts gin/chi/echo route verbs and net/http·gorilla `HandleFunc` handlers with file links; `gen-data` lists GORM models (non-model structs excluded); `gen-integrations` detects Go services (pgx/gorm, go-redis, aws-sdk-go, stripe-go, sendgrid, sentry-go) and scans `os.Getenv`/`os.LookupEnv`.

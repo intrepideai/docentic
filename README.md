@@ -8,7 +8,7 @@
 <h1 align="center">docentic</h1>
 
 <p align="center">
-  <em>Your agent guide through any JS/TS codebase.</em>
+  <em>Your agent guide through any codebase.</em>
 </p>
 
 <p align="center">
@@ -31,7 +31,9 @@
 
 **Make your repo agent-friendly in one command.**
 
-`docentic` scaffolds a standardized documentation spine into any JS/TS codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
+`docentic` scaffolds a standardized documentation spine into any codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
+
+> **Scope, honestly:** the scaffold, stack detection, and LLM content-fill (`docentic populate`) work on **any repo**. The deterministic, auto-regenerating generators (STACK / API / DATA / INTEGRATIONS) ship real extractors for **JS/TS (Next.js · Express · Fastify · Hono), Python (FastAPI · Flask · Django), Go (gin · chi · echo), Ruby (Rails), and PHP (Laravel)** — with Prisma/Drizzle, SQLAlchemy/Django ORM, GORM, ActiveRecord, and Eloquent. Other stacks still get the full spine and LLM-filled docs.
 
 > A docent guides visitors through a museum. `docentic` does the same for your repo — for both humans and AI agents. (The name is the adjective form: tools that are *docentic* are tools that act like a docent.)
 
@@ -49,7 +51,7 @@
 npx @intrepideai/docentic init
 ```
 
-That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Works with any stack in the JS/TS ecosystem.
+That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Works on any repo; deterministic doc generators cover JS/TS, Python, Go, Ruby & PHP (see [Scope](#why)).
 
 ### 2. In any agent with repo filesystem access (Claude Code · Cursor agent · Codex CLI · Gemini CLI · …)
 
@@ -442,7 +444,7 @@ npm run dev -- init /path/to/test/repo --dry-run    # iterate
 npm run build && npm link                            # try the binary
 ```
 
-CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) typechecks + runs two smoke tests on every PR.
+CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) typechecks, runs the `node:test` + smoke-test suite, and runs the generator shell tests (grep + ripgrep paths, Node 20/22) on every PR.
 
 ---
 
@@ -468,7 +470,7 @@ Copyright © 2026 Intrepide.
 ---
 
 <p align="center">
-  Made by <a href="https://github.com/intrepideai">Intrepide</a>. Built for any agent, any LLM, any JS/TS codebase.
+  Made by <a href="https://github.com/intrepideai">Intrepide</a>. Built for any agent, any LLM, any codebase.
 </p>
 
 <p align="center">

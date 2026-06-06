@@ -41,7 +41,7 @@ Reads and executes the 8-step pass in [`scripts/llm-docs/MAINTAIN.md`](../../../
 5. Use the researcher prompt at [`scripts/llm-docs/prompts/researcher.md`](../../../scripts/llm-docs/prompts/researcher.md).
 6. Use the librarian prompt at [`scripts/llm-docs/prompts/librarian.md`](../../../scripts/llm-docs/prompts/librarian.md).
 7. For HISTORY.md, use [`scripts/llm-docs/prompts/history.md`](../../../scripts/llm-docs/prompts/history.md).
-8. Open a single PR with all changes, labeled `llm-docs`.
+8. Open a single PR with all changes, labeled `docentic`.
 
 ## Critical hard rules (do not break)
 

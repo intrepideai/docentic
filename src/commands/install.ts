@@ -99,6 +99,12 @@ export async function installCommand(opts: InstallOptions): Promise<number> {
   log.step(opts.dryRun ? 'docentic install — DRY RUN' : 'docentic install');
   log.blank();
 
+  // --project only affects the Cursor rule (Claude Code skills are global). Be
+  // explicit rather than silently ignoring it for Claude.
+  if (opts.project && claudeRequested) {
+    log.warn('--project applies to Cursor only — the Claude Code skill installs globally (~/.claude/skills/docentic/).');
+  }
+
   const result: InstallResult = { installed: [], skipped: [], failed: [] };
 
   if (claudeRequested) installClaude(opts, result);

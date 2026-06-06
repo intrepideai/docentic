@@ -23,7 +23,7 @@ _TODO: technical terms that have specific meaning here._
 
 | Term | Meaning |
 |---|---|
-| **Spine** | The 13 standard documentation files in `docs/` (LLM-friendly template). |
+| **Spine** | The standardized doc set: root `AGENTS.md` + the 12 core files in `docs/` (ARCHITECTURE, STACK, DATA, API, MAP, INTEGRATIONS, OPS, CONVENTIONS, GLOSSARY, SECURITY-NOTES, DECISIONS, HISTORY), plus any auto-detected adds (UI/INFRA/ML/MOBILE). |
 | **Generated** | A doc file rebuilt deterministically from source. Has a sentinel `<!-- AUTO-GENERATED -->` comment. |
 | **Manual** | A doc file maintained by humans. May receive AI-proposed PRs. |
 | **AI** | A doc file (typically only `HISTORY.md`) updated by AI agent passes. |

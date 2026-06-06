@@ -12,6 +12,17 @@ const __dirname = dirname(__filename);
 // templates/ lives at the package root, alongside dist/ (or src/ in dev)
 const TEMPLATES_DIR = join(__dirname, '..', '..', 'templates');
 
+// docentic's own version — stamped into the scaffolded .agents/index.json
+// `template_version` so a repo records which release scaffolded it.
+function packageVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
+    return typeof pkg.version === 'string' ? pkg.version : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
 export interface ScaffoldOptions {
   repoPath: string;
   repoName: string;
@@ -243,6 +254,7 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
     DATE: date,
     STACK_ARRAY: stackArr,
     DOCS_ARRAY: docsArr,
+    TEMPLATE_VERSION: packageVersion(),
   };
 
   // Build the full list of (template, target) pairs we plan to write so we

@@ -4,7 +4,7 @@
   "repo": "{{REPO_NAME}}",
   "product_name": "{{REPO_NAME}}",
   "stack": {{STACK_ARRAY}},
-  "template_version": "0.1.0",
+  "template_version": "{{TEMPLATE_VERSION}}",
   "updated": "{{TIMESTAMP}}",
   "docs": {{DOCS_ARRAY}},
   "sub_agents": [],

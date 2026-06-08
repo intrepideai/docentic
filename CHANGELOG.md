@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-07
+
+Pre-launch polish: real day-one value, an honest footprint, and a `check` that
+actually checks. The first run now fills your docs from code instead of leaving
+TODO stubs, the default scaffold is lean (no research sprawl unless you ask for
+it), and the "hash-based safety" / drift-detection claims are now true rather
+than aspirational.
+
+### Added
+- **Fill-on-first-run.** `docentic init` now runs the deterministic generators against the freshly-scaffolded repo, so the very first PR shows real routes, models, endpoints, and dependencies — not empty `TODO` placeholders. Best-effort and fully gated: it only runs for stacks the generators support (JS/TS, Python, Go, Ruby, PHP) and silently leaves the honest placeholder otherwise, so it never fabricates content or fails `init` (no bash, missing `jq`, or an unsupported stack all degrade gracefully).
+- **`--full` flag.** Opt in to the `research/` pipeline (scouts + daily research loop). It's now **off by default** — see _Changed_.
+- **`CLAUDE.md` pointer.** `init` scaffolds a thin `CLAUDE.md` that imports `AGENTS.md` (`@AGENTS.md`), so Claude Code — which doesn't read `AGENTS.md` natively yet — still picks up the guide. Skipped if a `CLAUDE.md` already exists.
+- **Real `docentic check`.** Beyond schema + file-existence, `check` now flags **broken internal doc references**, **leftover scaffold TODO markers**, and **content drift** vs the recorded hash. All three are warnings by default (a fresh scaffold and everyday use pass); `--warnings-as-errors` escalates them to failures — the strict CI gate to enable once docs are filled. A fresh, not-yet-filled scaffold intentionally fails strict mode (its unfilled TODOs are the signal).
+
+### Changed
+- **Lean by default.** The default `init` no longer scaffolds the `research/` pipeline and per-source scout prompts (~30 fewer files — a generic repo goes from ~60 to ~30). The deterministic generators, validators, and `MAINTAIN.md` stay — they're the value, not the sprawl. Pass `--full` for the research loop. `--minimal` and `--spine-only` are unchanged.
+- **Honest, de-jargoned `init` output, commit, and PR copy.** A truthful one-line "only docs/config/scripts were added — your application code is untouched" reassurance; the commit/PR body now reflects which docs were auto-filled vs still need filling, and drops "deterministic scaffold" jargon.
+- **Repositioned README.** Leads with the real differentiator (writes the actual facts from your code, filled on first run) instead of the now-commoditized act of emitting `AGENTS.md`; adds a Lovable/Bolt/v0/Replit "graduation moment" on-ramp; documents `--full`, the lean default, the `CLAUDE.md` pointer, and what `check` now validates.
+
+### Fixed
+- **Hash-based drift detection was structurally broken** — generators stamp a fresh `updated:` timestamp into every file, so the content hash changed on every regeneration and drift was a 100% false positive. Hashing is now normalized to ignore the volatile `updated:`/`hash:`/`generated_hash:` frontmatter lines, consistently across `validate.sh`, `MAINTAIN.md`, and `docentic check` (verified byte-identical).
+- **`docentic --version` reported a stale hardcoded `0.2.2`.** It now reads the real version from `package.json` (single source of truth in `src/lib/version.ts`), so this class of drift is structurally impossible.
+- **Removed vaporware from the README** — the "Coming soon: `docentic status` / `docentic update`" block promised commands that don't exist (`update` is already covered by "`init` is safe to re-run").
+
 ## [0.3.0] — 2026-06-06
 
 Stack-agnostic generators and multi-provider content-fill. docentic's
@@ -223,7 +247,8 @@ and detect more of what's actually in the repo.
 - CI: typecheck + two smoke tests (dry-run, full scaffold)
 - README with dual copy-paste hero (terminal + LLM prompt), comparison table, Mermaid spine diagram, "agent-friendly" badge for downstream repos
 
-[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/intrepideai/docentic/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/intrepideai/docentic/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/intrepideai/docentic/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/intrepideai/docentic/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/intrepideai/docentic/compare/v0.2.1...v0.2.2

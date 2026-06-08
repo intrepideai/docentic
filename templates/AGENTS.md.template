@@ -39,7 +39,7 @@ _TODO: filled in by the Bootstrap agent after reading package.json / pyproject.t
 | Security & threat model | [docs/SECURITY-NOTES.md](./docs/SECURITY-NOTES.md) |
 | Architecture decisions (ADRs) | [docs/DECISIONS.md](./docs/DECISIONS.md) |
 | Recent changes | [docs/HISTORY.md](./docs/HISTORY.md) |
-| Research library | [research/_meta/TOP-IDEAS.md](./research/_meta/TOP-IDEAS.md) |
+{{RESEARCH_ROW}}
 
 ## Maintainers
 

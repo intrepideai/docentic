@@ -6,13 +6,14 @@ import { initCommand } from './commands/init.js';
 import { checkCommand } from './commands/check.js';
 import { installCommand } from './commands/install.js';
 import { populateCommand } from './commands/populate.js';
+import { packageVersion } from './lib/version.js';
 
 const program = new Command();
 
 program
   .name('docentic')
   .description('Your agent guide through any codebase. Scaffolds AI-friendly docs into any repo.')
-  .version('0.2.2');
+  .version(packageVersion());
 
 program
   .command('init')
@@ -22,6 +23,7 @@ program
   .option('-f, --force', 'overwrite existing files')
   .option('-m, --minimal', 'only infrastructure (no docs/* skeletons)')
   .option('--spine-only', 'scaffold AGENTS.md + docs/ only (skip research/ and scripts/llm-docs/)')
+  .option('--full', 'also scaffold the research/ pipeline (scouts, daily research loop) — off by default')
   .option('--force-ignored', 'scaffold files even when they would be ignored by .gitignore')
   .option('--no-pr', 'commit on a branch but do not open a PR')
   .option('--no-commit', 'scaffold files without git operations')
@@ -33,6 +35,7 @@ program
       force: opts.force,
       minimal: opts.minimal,
       spineOnly: opts.spineOnly,
+      full: opts.full,
       forceIgnored: opts.forceIgnored,
       noPr: !opts.pr, // commander inverts --no-pr
       noCommit: !opts.commit,

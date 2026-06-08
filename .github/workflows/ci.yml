@@ -91,12 +91,37 @@ jobs:
           bash scripts/llm-docs/gen-data.sh > /dev/null
           # Verify JSON is valid
           jq -e . .agents/index.json > /dev/null
-          jq -e . research/index.json > /dev/null
+          # The lean default must NOT scaffold the research pipeline.
+          test ! -d research || (echo "✗ research/ should be --full-only"; exit 1)
+          # Generated docs are filled from code on first run (this is a JS repo) —
+          # STACK.md must not still carry the unsupported-stack placeholder.
+          if grep -q "Still seeing this note" docs/STACK.md; then echo "✗ STACK.md not filled on first run"; exit 1; fi
           # Verify it committed on the expected branch
           test "$(git rev-parse --abbrev-ref HEAD)" = "docentic/template-scaffold"
 
+          # Smoke test 2b: --full scaffolds the research pipeline (valid JSON).
+          FULLDIR=$(mktemp -d)
+          cd "$FULLDIR"
+          git init -q; git config user.email "ci@example.com"; git config user.name "CI"
+          echo '{"name":"full"}' > package.json
+          git add -A && git commit -q -m "init"
+          node "$GITHUB_WORKSPACE/dist/cli.js" init "$FULLDIR" --no-pr --full > /dev/null
+          test -d research/_meta || (echo "✗ --full should scaffold research/"; exit 1)
+          jq -e . research/index.json > /dev/null
+          cd "$TESTDIR"
+
           # Smoke test 3: docentic check passes against the scaffold
           node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR"
+
+          # Smoke test 3b: strict-mode contract — a fresh scaffold still has
+          # unfilled human-doc TODOs, so it PASSES the default check but FAILS
+          # --warnings-as-errors. Locks the documented behavior (README/CHANGELOG)
+          # so the "fresh scaffold passes default, strict is for filled repos"
+          # claim can't silently drift.
+          if node "$GITHUB_WORKSPACE/dist/cli.js" check "$TESTDIR" --warnings-as-errors > /dev/null 2>&1; then
+            echo "✗ strict check must fail on a fresh scaffold's unfilled TODOs"
+            exit 1
+          fi
 
           # Smoke test 4: docentic check exits non-zero when index.json is corrupt
           echo '{ broken' > "$TESTDIR/.agents/index.json"

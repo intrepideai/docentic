@@ -23,7 +23,11 @@ SUGGESTIONS=research/_meta/SUGGESTIONS.md
 
 # ----- helpers -----
 log()  { echo "[validate] $*" >&2; }
-sha() { sha256sum "$1" 2>/dev/null | cut -d' ' -f1; }
+# Content hash for drift detection. Strips the volatile frontmatter lines
+# (`updated:` is re-stamped every generation; `hash:`/`generated_hash:` are
+# bookkeeping) so a regenerated-but-unchanged file doesn't read as drift. MUST
+# match normalizeForHash() in src/lib/hash.ts and the hash step in MAINTAIN.md.
+sha() { sed -E '/^(updated|hash|generated_hash): /d' "$1" 2>/dev/null | sha256sum | cut -d' ' -f1; }
 
 suggest() {
   local kind="$1"; shift

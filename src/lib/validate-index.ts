@@ -53,7 +53,7 @@ export function validateAgentsIndex(raw: unknown): ValidationIssue[] {
     issues.push({ severity: 'error', path: 'repo', message: 'must be a non-empty string' });
   }
   if (idx.template_version !== undefined && (typeof idx.template_version !== 'string' || !SEMVER.test(idx.template_version))) {
-    issues.push({ severity: 'error', path: 'template_version', message: `must be semver (e.g. 0.3.0); got ${JSON.stringify(idx.template_version)}` });
+    issues.push({ severity: 'error', path: 'template_version', message: `must be semver (e.g. 0.4.0); got ${JSON.stringify(idx.template_version)}` });
   }
   if (!Array.isArray(idx.docs)) {
     issues.push({ severity: 'error', path: 'docs', message: 'must be an array' });

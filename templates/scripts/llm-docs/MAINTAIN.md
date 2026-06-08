@@ -52,7 +52,7 @@ Detailed step-by-step below.
 bash scripts/llm-docs/validate.sh --read-only
 ```
 
-This loads `.agents/index.json` and computes a current `sha256` hash for every file listed. Outputs a state object the rest of the pass consumes.
+This loads `.agents/index.json` and computes a current `sha256` hash for every file listed — normalized to ignore the volatile `updated:`/`hash:`/`generated_hash:` frontmatter lines, so a file that was regenerated but is otherwise unchanged doesn't read as drift. Outputs a state object the rest of the pass consumes.
 
 For each file, decide:
 - **No change since last sync** (`current_hash == stored_hash == generated_hash`) → skip in step 2
@@ -66,10 +66,16 @@ For each file, decide:
 For each `owner: generator` file in `.agents/index.json`:
 
 ```bash
+# Content hash that ignores the volatile frontmatter (`updated:` is re-stamped
+# every generation; `hash:`/`generated_hash:` are bookkeeping). MUST match the
+# `sha()` helper in validate.sh and normalizeForHash() in src/lib/hash.ts, so a
+# hash recorded here verifies in `docentic check`.
+_sha() { sed -E '/^(updated|hash|generated_hash): /d' "$1" | sha256sum | cut -d' ' -f1; }
+
 # Example for STACK.md
 bash scripts/llm-docs/gen-stack.sh > /tmp/STACK.md.new
-new_hash=$(sha256sum /tmp/STACK.md.new | cut -d' ' -f1)
-current_hash=$(sha256sum docs/STACK.md | cut -d' ' -f1)
+new_hash=$(_sha /tmp/STACK.md.new)
+current_hash=$(_sha docs/STACK.md)
 stored_generated_hash=$(jq -r '.docs[] | select(.path == "docs/STACK.md") | .generated_hash' .agents/index.json)
 
 if [ "$current_hash" = "$stored_generated_hash" ]; then
@@ -203,8 +209,9 @@ Default merge policy for HISTORY.md: `auto_delayed:4h` (auto-merge after 4 hours
 
 ## Step 6 — Update .agents/index.json
 
-For every file we touched in steps 2-5:
-- Recompute `hash` = `sha256(current content)`
+For every file we touched in steps 2-5 (use the normalized `_sha` from step 2,
+not raw `sha256sum`, so the recorded hash verifies in `docentic check`):
+- Recompute `hash` = `_sha(current content)`
 - For generated files: update `generated_hash` = the hash the generator produced
 - Update `updated` timestamp
 - Recount `research.library_size`

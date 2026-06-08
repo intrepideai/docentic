@@ -264,6 +264,23 @@ export function detectStack(repoPath: string): DetectedStack {
   return result;
 }
 
+// Languages the deterministic gen-*.sh generators can actually extract real
+// facts from. Used to gate fill-on-first-run: on any other stack the generators
+// would emit empty/misleading tables, so we leave the honest placeholder docs
+// instead. Keep in sync with the lang/<x>.sh adapters + the JS path.
+const GENERATOR_LANGUAGES = new Set([
+  'javascript/typescript',
+  'python',
+  'go',
+  'ruby',
+  'php',
+]);
+
+// True if at least one detected language has a deterministic generator.
+export function generatorsSupport(stack: DetectedStack): boolean {
+  return stack.languages.some((l) => GENERATOR_LANGUAGES.has(l));
+}
+
 // Decide which auto-detected docs files to include based on stack.
 export function autoDetectedDocs(stack: DetectedStack): string[] {
   const files: string[] = [];

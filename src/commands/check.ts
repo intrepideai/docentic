@@ -1,18 +1,28 @@
 // `docentic check` — validate a scaffolded repo without modifying anything.
 //
-// Use cases:
-//   1. CI step: catch drift / corruption / missing files on every PR
-//   2. Local sanity check after manual edits
-//   3. Pre-commit hook
+// What it checks:
+//   1. .agents/index.json is present, valid JSON, and schema-conformant
+//   2. Every file the index lists actually exists on disk (+ the hard core)
+//   3. Spine docs don't link to files that don't exist (broken references)
+//   4. Human/AI docs don't still carry unfilled scaffold TODO markers
+//   5. Generated docs haven't drifted from their recorded content hash
+//      (dormant until a maintenance pass records real hashes — `pending` skips)
+//
+// 3–5 are warnings by default, so a freshly-scaffolded repo (and everyday use)
+// passes the default check. --warnings-as-errors escalates them to failures —
+// the strict gate to add to CI once your docs are filled: it fails on leftover
+// TODOs, broken references, or drift. A fresh scaffold, which still has unfilled
+// TODOs by design, intentionally FAILS strict mode until you fill it.
 //
 // Exit codes:
-//   0 — clean (no errors; warnings printed but don't fail)
+//   0 — clean (no errors; warnings printed but don't fail unless --strict)
 //   1 — errors found
 //   2 — could not run (not a docentic repo, etc.)
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
 import { validateAgentsIndex, type ValidationIssue } from '../lib/validate-index.js';
+import { fileContentHash } from '../lib/hash.js';
 import { log } from '../lib/log.js';
 
 export interface CheckOptions {
@@ -46,11 +56,97 @@ function requiredFiles(raw: unknown): string[] {
   const docs = (raw as { docs?: unknown }).docs;
   if (Array.isArray(docs)) {
     for (const d of docs) {
+      if (typeof d !== 'object' || d === null) continue; // tolerate a botched hand-edit (null/hole)
       const p = (d as { path?: unknown }).path;
       if (typeof p === 'string' && p.length > 0) fromIndex.push(p);
     }
   }
   return Array.from(new Set([...HARD_CORE, ...fromIndex]));
+}
+
+// The spine docs docentic ever scaffolds. Used to tell an intentionally
+// mode-omitted spine doc (e.g. --minimal drops docs/STACK.md, and AGENTS.md's
+// static "where to look" table still links to it) apart from a genuine typo or
+// a renamed/removed file. Links to these are not flagged as broken.
+const SPINE_DOC_NAMES = new Set([
+  'ARCHITECTURE', 'STACK', 'DATA', 'API', 'MAP', 'INTEGRATIONS', 'OPS',
+  'CONVENTIONS', 'GLOSSARY', 'SECURITY-NOTES', 'DECISIONS', 'HISTORY',
+  'UI', 'INFRA', 'ML', 'MOBILE',
+]);
+
+function isOmittableSpineDoc(resolvedRelPath: string): boolean {
+  const m = /^docs\/([A-Z-]+)\.md$/.exec(resolvedRelPath);
+  return !!m && SPINE_DOC_NAMES.has(m[1] ?? '');
+}
+
+// Pull repo-relative markdown-file link targets out of a doc's body. Skips
+// external URLs, mailto:, and pure anchors; strips trailing #anchors.
+function extractDocLinks(content: string): string[] {
+  const out: string[] = [];
+  const re = /\]\(([^)]+)\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    // Drop an optional markdown title: [x](./a.md "Title") → take the URL token.
+    let t = (m[1] ?? '').trim().split(/\s+/)[0] ?? '';
+    if (/^(https?:|mailto:|#)/i.test(t)) continue; // external / anchor (case-insensitive)
+    t = (t.split('#')[0] ?? '').trim();
+    if (!t || t.startsWith('/') || !t.endsWith('.md')) continue;
+    out.push(t);
+  }
+  return out;
+}
+
+// Deeper content checks beyond "does the file exist": broken doc references,
+// leftover scaffold TODOs, and content drift vs the recorded hash. All emitted
+// as warnings (escalated to errors under --warnings-as-errors).
+function contentIssues(repoPath: string, raw: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const docs = Array.isArray((raw as { docs?: unknown }).docs)
+    ? ((raw as { docs: unknown[] }).docs as Array<Record<string, unknown>>)
+    : [];
+
+  for (const d of docs) {
+    if (typeof d !== 'object' || d === null) continue; // tolerate a botched hand-edit (null/hole)
+    const rel = typeof d.path === 'string' ? d.path : '';
+    if (!rel.endsWith('.md')) continue;
+    const abs = join(repoPath, rel);
+    if (!existsSync(abs)) continue; // a missing indexed file is already a step-2 error
+    let content: string;
+    try {
+      content = readFileSync(abs, 'utf-8');
+    } catch {
+      continue;
+    }
+
+    // (a) Broken internal references — links to .md files that don't exist.
+    // Skip research/ and scripts/ (optional / agent-managed) and intentionally
+    // mode-omitted spine docs.
+    for (const target of extractDocLinks(content)) {
+      const resolved = join(dirname(rel), target);
+      if (resolved.startsWith('research/') || resolved.startsWith('scripts/')) continue;
+      if (isOmittableSpineDoc(resolved)) continue;
+      if (!existsSync(join(repoPath, resolved))) {
+        issues.push({ severity: 'warning', path: rel, message: `links to \`${target}\` which doesn't exist on disk` });
+      }
+    }
+
+    // (b) Leftover scaffold TODO markers in human/AI-owned docs. Generated docs
+    // never carry them, so only flag the docs a human/agent is meant to fill.
+    if (String(d.owner ?? '') !== 'generator' && /TODO:/.test(content)) {
+      issues.push({ severity: 'warning', path: rel, message: 'still has unfilled TODO markers — run `docentic populate` or fill manually' });
+    }
+
+    // (c) Content drift vs the recorded hash. Dormant until a maintenance pass
+    // records a real hash — a `pending` (fresh-scaffold) hash is skipped.
+    const stored = typeof d.hash === 'string' ? d.hash : '';
+    if (stored && stored !== 'pending') {
+      const current = fileContentHash(abs);
+      if (current && current !== stored) {
+        issues.push({ severity: 'warning', path: rel, message: 'content changed since its recorded hash (drift) — regenerate or re-record' });
+      }
+    }
+  }
+  return issues;
 }
 
 export async function checkCommand(opts: CheckOptions): Promise<number> {
@@ -116,8 +212,12 @@ export async function checkCommand(opts: CheckOptions): Promise<number> {
     }
   }
 
-  // 3. Aggregate
-  const allIssues = [...indexIssues, ...fileIssues];
+  // 3. Deeper content checks (broken refs, leftover TODOs, hash drift) — only
+  // meaningful once the required files exist, so run them after step 2.
+  const deepIssues = contentIssues(repoPath, raw);
+
+  // 4. Aggregate
+  const allIssues = [...indexIssues, ...fileIssues, ...deepIssues];
   const errors = allIssues.filter((i) => i.severity === 'error');
   const warnings = allIssues.filter((i) => i.severity === 'warning');
 

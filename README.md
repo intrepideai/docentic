@@ -31,9 +31,13 @@
 
 **Make your repo agent-friendly in one command.**
 
-`docentic` scaffolds a standardized documentation spine into any codebase — so any AI agent (Claude, ChatGPT, Cursor, Codex, you-name-it) can land on the repo and immediately know where to look. No more grepping blindly. No more hallucinated paths.
+`docentic` reads your codebase and writes the **real facts** — your actual routes, data models, endpoints, and dependencies — into a standardized doc spine that any AI agent (Claude, Cursor, Codex, Gemini, you-name-it) reads first. Not boilerplate, not empty templates: on supported stacks the first run **fills your docs from the code**, so your AI stops hallucinating paths and breaking what already works.
 
-> **Scope, honestly:** the scaffold, stack detection, and LLM content-fill (`docentic populate`) work on **any repo**. The deterministic, auto-regenerating generators (STACK / API / DATA / INTEGRATIONS) ship real extractors for **JS/TS (Next.js · Express · Fastify · Hono), Python (FastAPI · Flask · Django), Go (gin · chi · echo), Ruby (Rails), and PHP (Laravel)** — with Prisma/Drizzle, SQLAlchemy/Django ORM, GORM, ActiveRecord, and Eloquent. Other stacks still get the full spine and LLM-filled docs.
+Every repo in your fleet gets the **same shape**, so any agent (or human) lands somewhere new and instantly knows where to look.
+
+> **Just exported from Lovable, Bolt, v0, or Replit?** `npx @intrepideai/docentic init` makes that fresh repo agent-ready in one step.
+
+> **Scope, honestly:** the scaffold and LLM content-fill (`docentic populate`) work on **any repo**. The deterministic generators that fill docs from code (STACK / API / DATA / MAP / INTEGRATIONS) ship real extractors for **JS/TS (Next.js · Express · Fastify · Hono), Python (FastAPI · Flask · Django), Go (gin · chi · echo), Ruby (Rails), and PHP (Laravel)** — with Prisma/Drizzle, SQLAlchemy/Django ORM, GORM, ActiveRecord, and Eloquent. Other stacks get the full spine with honest placeholders you fill via `docentic populate` or your agent.
 
 > A docent guides visitors through a museum. `docentic` does the same for your repo — for both humans and AI agents. (The name is the adjective form: tools that are *docentic* are tools that act like a docent.)
 
@@ -51,7 +55,7 @@
 npx @intrepideai/docentic init
 ```
 
-That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). ~50 files. Works on any repo; deterministic doc generators cover JS/TS, Python, Go, Ruby & PHP (see [Scope](#why)).
+That commits a `docentic/template-scaffold` branch and opens a PR (if `gh` is configured). A lean spine (~30 files) — and on supported stacks the generated docs come **pre-filled from your code**, not as empty TODOs. Add `--full` if you also want the `research/` pipeline. Works on any repo (see [Scope](#why)).
 
 ### 2. In any agent with repo filesystem access (Claude Code · Cursor agent · Codex CLI · Gemini CLI · …)
 
@@ -124,7 +128,7 @@ Agent: *reads AGENTS.md → docs/DATA.md*
 | API surface | Greppable, sometimes | `docs/API.md` (auto-regenerated) |
 | Known decisions | Buried in PR threads | `docs/DECISIONS.md` (ADRs) |
 | What changed lately | `git log` (verbose) | `docs/HISTORY.md` (curated) |
-| External research | None | `research/` (compounds over time) |
+| External research | None | `research/` (compounds over time — opt in with `--full`) |
 | Update cycle | Manual, drifts | Automated via the `maintain-repo` skill |
 
 The whole point: **same shape across every repo in your fleet**, so any agent (or human) lands somewhere new and instantly knows what to do.
@@ -155,8 +159,9 @@ cd docentic && npm install && npm run build && npm link
 | Flag | What it does |
 |---|---|
 | `--dry-run` | Print what would be created and exit; touch nothing. |
+| `--full` | Also scaffold the `research/` pipeline (scouts + daily research loop). **Off by default** — the lean spine covers most repos; opt in when you're ready to run the research loop. |
 | `--minimal` | Skip the `docs/*` spine; scaffold only `AGENTS.md` + `.agents/` + scripts. |
-| `--spine-only` | Scaffold only `AGENTS.md` + `docs/` + `.agents/` — skip the `research/` pipeline and `scripts/llm-docs/`. Good fit for repos that aren't ready to run the daily maintenance loop yet. |
+| `--spine-only` | Scaffold only `AGENTS.md` + `docs/` + `.agents/` — skip `scripts/llm-docs/` and the research pipeline. Good fit for repos that just want the doc spine. |
 | `--force` | Overwrite existing files. By default, anything that already exists is skipped. |
 | `--force-ignored` | Scaffold a file even if `.gitignore` would drop it on `git add`. (Default: hard-stop with the list, so you can fix `.gitignore` first.) |
 | `--no-pr` | Commit on a branch, but don't open a PR. |
@@ -226,6 +231,7 @@ graph TD
 ```text
 your-repo/
 ├── AGENTS.md                              Root index — every agent reads this first
+├── CLAUDE.md                              Thin pointer that imports AGENTS.md (Claude Code reads this)
 ├── .agents/
 │   ├── index.json                         Machine-readable doc inventory
 │   └── REMOVALS.md                        Permanent audit log of deletions
@@ -234,8 +240,9 @@ your-repo/
 ├── scripts/llm-docs/
 │   ├── MAINTAIN.md                        The orchestrator spec
 │   ├── gen-*.sh                           Deterministic doc generators
-│   ├── validate.sh, research.sh           Validators + research pipeline
-│   └── prompts/                           Per-task agent prompts
+│   ├── validate.sh                        Structure + drift validators
+│   ├── research.sh                        Research pipeline driver (--full only)
+│   └── prompts/                           Per-task agent prompts (--full only)
 ├── docs/
 │   ├── ARCHITECTURE.md                    THE ANCHOR — everything else points here
 │   ├── STACK / DATA / API / MAP           Auto-regenerated
@@ -244,12 +251,14 @@ your-repo/
 │   ├── SECURITY-NOTES / DECISIONS         Manual, critical (review required)
 │   ├── HISTORY                            AI-maintained, auto-merge after 4h
 │   └── UI / INFRA / ML / MOBILE           Auto-detected based on stack
-└── research/
+└── research/                             (only with --full)
     ├── config.yml                         Topics & sources (one repo-specific file)
     ├── intake/                            Scout output queue
     ├── topics/                            Research files organized by topic
     └── _meta/                             6 daily-rebuilt views (digest, top, gaps, ...)
 ```
+
+The lean default scaffolds everything above **except** `research/` — pass `--full` to add the research pipeline. The generated docs (STACK / API / DATA / MAP / INTEGRATIONS) are **filled from your code on the first run** for JS/TS, Python, Go, Ruby & PHP; other stacks get honest placeholders.
 
 </details>
 
@@ -262,8 +271,10 @@ Stack detection automatically adds `UI.md` for frontends, `INFRA.md` for IaC rep
 ```text
 docentic init [path]              Scaffold the template into a repo
   --dry-run                     Show what would be created without writing
+  --full                        Also scaffold the research/ pipeline (off by default)
   --force                       Overwrite existing files
   --minimal                     Only infrastructure (skip docs/* skeletons)
+  --spine-only                  Only AGENTS.md + docs/ + .agents/ (no scripts, no research)
   --no-pr                       Commit on a branch but don't open a PR
   --no-commit                   Just write files; no git operations
   --branch <name>               Custom branch name (default: docentic/template-scaffold)
@@ -290,9 +301,9 @@ docentic install                  Install the docentic skill into Claude Code an
 
 Exit codes for `docentic check`: `0` healthy · `1` errors found · `2` not a docentic repo.
 
-Coming soon:
-- `docentic status` — show template state for a repo
-- `docentic update` — re-sync the template after a new docentic release
+`docentic check` validates structure (schema + required files), catches **broken doc references** and **leftover TODO markers**, and flags **content drift** from the recorded hash. The last three are warnings by default, so a freshly-scaffolded repo (and everyday use) passes. `--warnings-as-errors` turns them into failures — the strict gate to add to CI **once your docs are filled**: it fails on leftover TODOs, broken references, or drift. (A fresh, not-yet-filled scaffold intentionally fails strict mode — that's the "you still have TODOs" signal.)
+
+`docentic init` is **safe to re-run** to pick up template updates (existing files are skipped unless `--force`).
 
 ---
 
@@ -318,22 +329,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: intrepideai/docentic@v0.3.0   # pin a tag (recommended)
+      - uses: intrepideai/docentic@v0.4.0   # pin a tag (recommended)
 ```
 
 Inputs (all optional):
 
 ```yaml
-- uses: intrepideai/docentic@v0.3.0
+- uses: intrepideai/docentic@v0.4.0
   with:
     path: '.'                              # repo path to check (default: workspace root)
     warnings-as-errors: 'true'             # fail on warnings too (default: false)
     json: 'false'                          # output JSON for piping (default: false)
     node-version: '20'                     # Node version to install (default: 20, min 20)
-    version: '@intrepideai/docentic@0.3.0' # pin a specific npm version (default: latest)
+    version: '@intrepideai/docentic@0.4.0' # pin a specific npm version (default: latest)
 ```
 
-**Pin to a tag** (e.g. `intrepideai/docentic@v0.3.0`) for reproducible CI — recommended. You can also pin the npm `version:` input. `@main` tracks the latest unreleased commit (use only if you want the bleeding edge).
+**Pin to a tag** (e.g. `intrepideai/docentic@v0.4.0`) for reproducible CI — recommended. You can also pin the npm `version:` input. `@main` tracks the latest unreleased commit (use only if you want the bleeding edge).
 
 Outputs:
 

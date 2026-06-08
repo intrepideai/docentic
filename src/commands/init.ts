@@ -1,8 +1,9 @@
 // `llm-docs init` — scaffold the template into a repo.
 
-import { existsSync, statSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
-import { detectStack, autoDetectedDocs } from '../lib/detect-stack.js';
+import { existsSync, statSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { resolve, basename, join } from 'node:path';
+import { detectStack, autoDetectedDocs, generatorsSupport } from '../lib/detect-stack.js';
 import { scaffold } from '../lib/scaffold.js';
 import {
   isGitRepo,
@@ -27,6 +28,7 @@ export interface InitOptions {
   force?: boolean;
   minimal?: boolean;
   spineOnly?: boolean;
+  full?: boolean;
   forceIgnored?: boolean;
   noPr?: boolean;
   noCommit?: boolean;
@@ -83,7 +85,7 @@ export async function initCommand(opts: InitOptions): Promise<number> {
   // failure during scaffolding never strands the repo on an empty branch).
   const branchName = opts.branch ?? 'docentic/template-scaffold';
   // Pre-flight: if the target branch already exists and we're not on it, stop
-  // BEFORE scaffolding. Otherwise we'd write ~50 files and only then fail at
+  // BEFORE scaffolding. Otherwise we'd write ~30 files and only then fail at
   // `checkout -b`, leaving a half-scaffold on the user's current branch.
   if (!opts.dryRun && !opts.noCommit && hasCommits(repoPath)
       && currentBranch(repoPath) !== branchName && branchExists(repoPath, branchName)) {
@@ -102,6 +104,7 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     stack,
     minimal: opts.minimal,
     spineOnly: opts.spineOnly,
+    full: opts.full,
     force: opts.force,
     forceIgnored: opts.forceIgnored,
     dryRun: opts.dryRun,
@@ -145,10 +148,24 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     return 0;
   }
 
+  // 5b. Fill the deterministic docs from code on the first run (supported
+  // stacks only). The scaffold wrote placeholder STACK/API/DATA/MAP/INTEGRATIONS
+  // docs; run the generators we just scaffolded so the first PR shows real
+  // routes/models/deps instead of TODO stubs. Best-effort — never blocks init.
+  const filled = fillGeneratedDocs(repoPath, stack, opts, result.filesCreated);
+  if (filled.length > 0) {
+    log.success(`Filled ${filled.length} doc(s) from your code: ${filled.join(', ')}`);
+  }
+
+  // Be explicit and TRUE about blast radius: we only add docs/config/tooling,
+  // never application source. (Git side effects — branch, commit, PR — are
+  // logged on their own lines below, so this stays honest in every mode.)
+  log.dim(`  Only docs, config, and docentic's own scripts were added — your application code is untouched.`);
+
   if (opts.noCommit) {
     log.blank();
     log.success(`Files scaffolded; no commit (--no-commit)`);
-    nextSteps(opts);
+    nextSteps(opts, filled);
     return 0;
   }
 
@@ -185,7 +202,7 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     // Stage only the files we created (+ the .gitignore tweak) — never `git
     // add -A`, which could sweep in an un-ignored .env or unrelated changes.
     stageFiles(repoPath, stagePaths);
-    const msg = commitMessage(repoName, stack, autoDocs, result.filesCreated.length);
+    const msg = commitMessage(repoName, stack, autoDocs, result.filesCreated.length, filled);
     commit(repoPath, msg);
     log.success(`Committed on ${branchName}`);
   } catch (err) {
@@ -197,14 +214,14 @@ export async function initCommand(opts: InitOptions): Promise<number> {
   if (opts.noPr) {
     log.blank();
     log.dim(`Skipping PR creation (--no-pr)`);
-    nextSteps(opts);
+    nextSteps(opts, filled);
     return 0;
   }
 
   if (!ghAvailable()) {
     log.warn(`gh CLI not found — skipping PR creation`);
     log.dim(`  install gh and run: cd ${repoPath} && gh pr create --title "..." --body "..."`);
-    nextSteps(opts);
+    nextSteps(opts, filled);
     return 0;
   }
 
@@ -225,7 +242,7 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     }
     const url = openPR(repoPath, {
       title: 'chore: bootstrap docentic template',
-      body: prBody(repoName, stack, autoDocs, result.filesCreated.length),
+      body: prBody(repoName, stack, autoDocs, result.filesCreated.length, filled),
       ...(labelOk ? { label: 'docentic' } : {}),
     });
     log.success(`PR opened: ${url}`);
@@ -234,20 +251,117 @@ export async function initCommand(opts: InitOptions): Promise<number> {
     log.dim(`  branch is committed; you can open the PR manually with gh pr create`);
   }
 
-  nextSteps(opts);
+  nextSteps(opts, filled);
   return 0;
 }
 
-function nextSteps(opts: InitOptions): void {
+// Map the 5 generator-owned docs to the scripts that fill them. The order is
+// the order they appear in the first PR.
+const GENERATOR_DOCS: Array<{ script: string; doc: string }> = [
+  { script: 'scripts/llm-docs/gen-stack.sh', doc: 'docs/STACK.md' },
+  { script: 'scripts/llm-docs/gen-data.sh', doc: 'docs/DATA.md' },
+  { script: 'scripts/llm-docs/gen-api.sh', doc: 'docs/API.md' },
+  { script: 'scripts/llm-docs/gen-map.sh', doc: 'docs/MAP.md' },
+  { script: 'scripts/llm-docs/gen-integrations.sh', doc: 'docs/INTEGRATIONS.md' },
+];
+
+// Every script that fill-on-first-run executes or transitively `source`s (each
+// generator sources detect-stack.sh + the matching lang/<x>.sh adapter). We
+// only run fill when we just wrote ALL of them from our own templates this run.
+// If any pre-existed on disk and wasn't overwritten (no --force), it could be
+// attacker-planted in a hostile repo — so we skip fill entirely rather than
+// auto-execute a repo-resident script.
+const SCAFFOLD_SCRIPTS = [
+  'scripts/llm-docs/detect-stack.sh',
+  'scripts/llm-docs/gen-stack.sh',
+  'scripts/llm-docs/gen-data.sh',
+  'scripts/llm-docs/gen-api.sh',
+  'scripts/llm-docs/gen-map.sh',
+  'scripts/llm-docs/gen-integrations.sh',
+  'scripts/llm-docs/lang/python.sh',
+  'scripts/llm-docs/lang/go.sh',
+  'scripts/llm-docs/lang/ruby.sh',
+  'scripts/llm-docs/lang/php.sh',
+];
+
+function bashAvailable(): boolean {
+  try {
+    execFileSync('bash', ['-c', 'exit 0'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Run the deterministic generators against the freshly-scaffolded repo and
+// write their output over the placeholder docs. Returns the short doc names
+// that were filled (e.g. ['STACK.md', 'API.md']). Pure best-effort: any failure
+// (no bash, missing jq, an unsupported layout) silently leaves the placeholder.
+function fillGeneratedDocs(
+  repoPath: string,
+  stack: ReturnType<typeof detectStack>,
+  opts: InitOptions,
+  created: string[],
+): string[] {
+  // --minimal / --spine-only never scaffold these docs or their generators.
+  if (opts.minimal || opts.spineOnly) return [];
+  // On stacks without a deterministic generator, the scripts would emit empty
+  // tables — leave the honest placeholder instead of fabricating content.
+  if (!generatorsSupport(stack)) return [];
+  if (!bashAvailable()) return [];
+
+  const createdSet = new Set(created);
+  // Security gate: never execute a script we didn't just write ourselves. If any
+  // generator / detect-stack / lang adapter pre-existed on disk (so the scaffold
+  // skipped it without --force), skip fill — on a hostile repo that file could be
+  // attacker-planted, and the generators source it.
+  if (!SCAFFOLD_SCRIPTS.every((s) => createdSet.has(s))) return [];
+
+  const filled: string[] = [];
+  for (const { script, doc } of GENERATOR_DOCS) {
+    const scriptAbs = join(repoPath, script);
+    const docAbs = join(repoPath, doc);
+    // Only fill a doc the scaffold actually created this run, whose generator
+    // is present on disk.
+    if (!createdSet.has(doc) || !existsSync(scriptAbs) || !existsSync(docAbs)) continue;
+    try {
+      const out = execFileSync('bash', [scriptAbs], {
+        cwd: repoPath,
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 20000,
+        maxBuffer: 8 * 1024 * 1024,
+      });
+      // Guard against a generator that bailed and produced near-nothing.
+      if (out && out.trim().length > 80) {
+        writeFileSync(docAbs, out, 'utf-8');
+        filled.push(doc.replace(/^docs\//, ''));
+      }
+    } catch {
+      // Generator failed — leave the placeholder. init must never fail because
+      // a generator did.
+    }
+  }
+  return filled;
+}
+
+function nextSteps(opts: InitOptions, filled: string[] = []): void {
   log.blank();
   log.step('Next steps:');
   log.dim(`  1. Review the scaffold (or PR if one was opened)`);
-  log.dim(`  2. Fill in AGENTS.md + docs/* TODOs:`);
+  if (filled.length > 0) {
+    log.dim(`     ${filled.join(', ')} ${filled.length === 1 ? 'was' : 'were'} auto-filled from your code — skim for accuracy.`);
+  }
+  log.dim(`  2. Fill the remaining TODOs in AGENTS.md + the manual docs/*:`);
   log.dim(`       → in an agent with repo filesystem access (Claude Code, Cursor agent,`);
   log.dim(`         Codex CLI, Gemini CLI…), paste prompts/bootstrap.md from the docentic repo`);
-  log.dim(`       → or 'docentic populate' (uses ANTHROPIC_API_KEY from .env)`);
-  log.dim(`  3. Propose research topics with prompts/config-seeder.md`);
-  log.dim(`  4. Merge, then schedule the daily maintenance loop (scripts/llm-docs/MAINTAIN.md)`);
+  log.dim(`       → or 'docentic populate' (uses an API key from .env)`);
+  if (opts.full) {
+    log.dim(`  3. Propose research topics with prompts/config-seeder.md`);
+    log.dim(`  4. Merge, then schedule the daily maintenance loop (scripts/llm-docs/MAINTAIN.md)`);
+  } else {
+    log.dim(`  3. Merge. Want the daily research loop too? Re-run with --full.`);
+  }
   log.blank();
   log.dim(`  Tip: 'docentic init' is safe to re-run — existing files are skipped`);
   log.dim(`       unless --force is passed. Use it to pick up template updates.`);
@@ -258,7 +372,11 @@ function commitMessage(
   stack: ReturnType<typeof detectStack>,
   autoDocs: string[],
   fileCount: number,
+  filled: string[],
 ): string {
+  const filledLine = filled.length > 0
+    ? `${filled.join(', ')} were auto-filled from your code. `
+    : '';
   return `chore: scaffold docentic template (${fileCount} files)
 
 Scaffolded by docentic (@intrepideai/docentic).
@@ -267,15 +385,13 @@ Your agent guide through any codebase.
 Detected stack: ${stack.labels.join(', ') || '(generic)'}
 Auto-detected docs: ${autoDocs.length > 0 ? autoDocs.join(', ') : '(none)'}
 
-This is the deterministic scaffold only. To fill in AGENTS.md and
-docs/* TODOs with real content, either:
+Only docs, config, and docentic's own scripts were added — no
+application code was changed. ${filledLine}AGENTS.md and the manual
+docs/* still have TODO markers; to fill them, either:
 
   (a) paste prompts/bootstrap.md (from the docentic repo) into any
       LLM with read access to this repo, or
   (b) run \`docentic populate\` with an API key in .env
-
-Then run the Config Seeder (prompts/config-seeder.md) to propose
-topics for research/config.yml.
 
 Co-Authored-By: docentic <clyde@intrepide.ai>`;
 }
@@ -285,12 +401,21 @@ function prBody(
   stack: ReturnType<typeof detectStack>,
   autoDocs: string[],
   fileCount: number,
+  filled: string[],
 ): string {
+  const filledBlock = filled.length > 0
+    ? `## Already filled from your code
+
+These were generated from the actual codebase — skim them for accuracy:
+
+${filled.map((d) => `- \`docs/${d}\``).join('\n')}
+`
+    : '';
   return `## What this is
 
-Deterministic scaffold of the Intrepide agent-friendly docs template, generated by [\`docentic\`](https://github.com/intrepideai/docentic) — your agent guide through any codebase.
+Scaffold of the agent-friendly docs template, added by [\`docentic\`](https://github.com/intrepideai/docentic) — your agent guide through any codebase.
 
-${fileCount} files created.
+${fileCount} files created. Only docs, config, and docentic's own scripts were added — **no application code was changed.**
 
 ## Detected stack
 
@@ -304,14 +429,11 @@ ${fileCount} files created.
 
 ${autoDocs.length > 0 ? autoDocs.map((d) => `- \`docs/${d}\``).join('\n') : '(none — repo has no frontend/infra/ML/mobile signal)'}
 
-## What's NOT in this PR
+${filledBlock}## Still needs filling
 
-- Real content for \`AGENTS.md\` and \`docs/*\` files — they're scaffolded with TODOs and frontmatter only
-- Tailored \`research/config.yml\` topics — currently empty skeleton
+- \`AGENTS.md\` and the manual \`docs/*\` files — scaffolded with TODOs and frontmatter
 
-Run the **Bootstrap prompt** ([prompts/bootstrap.md](https://github.com/intrepideai/docentic/blob/main/prompts/bootstrap.md)) and the **Config Seeder prompt** ([prompts/config-seeder.md](https://github.com/intrepideai/docentic/blob/main/prompts/config-seeder.md)) after this PR merges to fill those in.
-
-Or use \`docentic populate\` to do it automatically with an API key in \`.env\`.
+Run the **Bootstrap prompt** ([prompts/bootstrap.md](https://github.com/intrepideai/docentic/blob/main/prompts/bootstrap.md)) after this PR merges, or use \`docentic populate\` to do it automatically with an API key in \`.env\`.
 
 ## Review checklist
 
@@ -319,12 +441,6 @@ Or use \`docentic populate\` to do it automatically with an API key in \`.env\`.
 - [ ] Stack detection matches reality (otherwise auto-detected docs may be wrong)
 - [ ] No naming collisions with existing \`docs/\` directory or other repo conventions
 - [ ] Ready to run the Bootstrap agent after merge
-
-## After merge
-
-1. Populate content (Bootstrap prompt or \`docentic populate\`)
-2. Propose research topics (Config Seeder prompt)
-3. Schedule daily maintenance per the [docentic README](https://github.com/intrepideai/docentic#readme)
 
 ---
 

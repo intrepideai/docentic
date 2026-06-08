@@ -6,22 +6,12 @@ import { fileURLToPath } from 'node:url';
 import type { DetectedStack } from './detect-stack.js';
 import { autoDetectedDocs } from './detect-stack.js';
 import { filterIgnored } from './git.js';
+import { packageVersion } from './version.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // templates/ lives at the package root, alongside dist/ (or src/ in dev)
 const TEMPLATES_DIR = join(__dirname, '..', '..', 'templates');
-
-// docentic's own version — stamped into the scaffolded .agents/index.json
-// `template_version` so a repo records which release scaffolded it.
-function packageVersion(): string {
-  try {
-    const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
-    return typeof pkg.version === 'string' ? pkg.version : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-}
 
 export interface ScaffoldOptions {
   repoPath: string;
@@ -29,6 +19,7 @@ export interface ScaffoldOptions {
   stack: DetectedStack;
   minimal?: boolean;     // skip docs/* skeletons (keep infra + AGENTS.md)
   spineOnly?: boolean;   // skip research/ and scripts/llm-docs/ (keep AGENTS.md + docs/)
+  full?: boolean;        // opt IN to the research/ pipeline (off by default)
   force?: boolean;
   forceIgnored?: boolean; // scaffold files even if they're in .gitignore
   dryRun?: boolean;
@@ -43,6 +34,9 @@ export interface ScaffoldResult {
 
 // Files that always come from the template, regardless of --minimal mode.
 const ALWAYS_FILES = [
+  // Claude Code doesn't read AGENTS.md natively yet (anthropics/claude-code#1846),
+  // so ship a tiny CLAUDE.md that imports it. Skipped if one already exists.
+  'CLAUDE.md',
   'scripts/llm-docs/MAINTAIN.md',
   'scripts/llm-docs/detect-stack.sh',
   'scripts/llm-docs/lang/python.sh',
@@ -132,15 +126,31 @@ const SPINE_ONLY_SKIP_PATTERNS = [
   /^\.claude\//,
 ];
 
+// The research/ pipeline — the daily scout/research loop and its prompts. This
+// is the bulk of the "scaffold sprawl" (the research/ tree + the per-source
+// scout prompts) and most repos don't run the loop on day one, so it's OFF by
+// default and opt-in via --full. The generators, validators, and MAINTAIN.md
+// stay in the default scaffold — they're the deterministic value, not sprawl.
+const RESEARCH_PIPELINE_PATTERNS = [
+  /^research\//,
+  /^scripts\/llm-docs\/research\.sh$/,
+  /^scripts\/llm-docs\/prompts\/researcher\.md$/,
+  /^scripts\/llm-docs\/prompts\/librarian\.md$/,
+  /^scripts\/llm-docs\/prompts\/history\.md$/,
+  /^scripts\/llm-docs\/prompts\/scouts\//,
+];
+
 // Single source of truth for "is this target dropped in the current mode?".
 // Used both when planning the file copy AND when building the index docs[]
 // array, so .agents/index.json never lists a file the mode didn't scaffold.
 function shouldSkipForMode(
   targetRelPath: string,
-  opts: { minimal?: boolean; spineOnly?: boolean },
+  opts: { minimal?: boolean; spineOnly?: boolean; full?: boolean },
 ): boolean {
   if (opts.minimal && MINIMAL_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
   if (opts.spineOnly && SPINE_ONLY_SKIP_PATTERNS.some((re) => re.test(targetRelPath))) return true;
+  // Research pipeline is opt-in everywhere: skip it unless --full was passed.
+  if (!opts.full && RESEARCH_PIPELINE_PATTERNS.some((re) => re.test(targetRelPath))) return true;
   return false;
 }
 
@@ -154,7 +164,7 @@ function substitute(content: string, vars: Record<string, string>): string {
 
 function buildDocsArrayForIndex(
   stack: DetectedStack,
-  opts: { minimal?: boolean; spineOnly?: boolean },
+  opts: { minimal?: boolean; spineOnly?: boolean; full?: boolean },
 ): string {
   const docs: Array<Record<string, unknown>> = [
     { path: 'AGENTS.md', owner: 'human', edit_authority: ['human', 'ai'], merge_policy: 'review', critical: true, size_limit_lines: 200, hash: 'pending' },
@@ -248,6 +258,12 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
   const date = timestamp.split('T')[0] ?? timestamp.slice(0, 10);
   const stackArr = JSON.stringify(stackLabels(opts.stack));
   const docsArr = buildDocsArrayForIndex(opts.stack, opts);
+  // The research library row only points somewhere real when the research/
+  // pipeline was scaffolded (--full). In the lean default we omit the row so
+  // AGENTS.md never carries a dead pointer.
+  const researchRow = opts.full
+    ? '| Research library | [research/_meta/TOP-IDEAS.md](./research/_meta/TOP-IDEAS.md) |'
+    : '';
   const vars: Record<string, string> = {
     REPO_NAME: opts.repoName,
     TIMESTAMP: timestamp,
@@ -255,6 +271,7 @@ export function scaffold(opts: ScaffoldOptions): ScaffoldResult {
     STACK_ARRAY: stackArr,
     DOCS_ARRAY: docsArr,
     TEMPLATE_VERSION: packageVersion(),
+    RESEARCH_ROW: researchRow,
   };
 
   // Build the full list of (template, target) pairs we plan to write so we
